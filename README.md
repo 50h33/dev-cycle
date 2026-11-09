@@ -8,8 +8,8 @@ TicketRush의 기존 Claude Code 에이전트, 명령과 스킬을 추출해 다
 설정 예시는 [`examples/dev-cycle.config.json`](examples/dev-cycle.config.json)에 있습니다.
 
 [추출 파일 대응, 설정 계약과 설치 방법](docs/workflow-package.md)을 먼저 확인하세요.
-현재는 템플릿과 설정 검증, 기존 파일을 보존하는 `init` 설치를 제공합니다.
-변경 모듈 실행 `test`와 실행 기록 기반 `report` CLI는 후속 이슈에서 구현합니다.
+현재는 템플릿과 설정 검증, 기존 파일을 보존하는 `init` 설치와 Gradle 변경 모듈의
+`test` 실행 및 결과 기록을 제공합니다. 기록 기반 `report` CLI는 후속 이슈에서 구현합니다.
 
 ## init으로 설치
 
@@ -35,6 +35,18 @@ node /absolute/path/to/dev-cycle/dist/cli.js init /absolute/path/to/project \
 
 기존 파일과 내용이 다르면 덮어쓰거나 자동 병합하지 않고 전체 설치를 중단합니다.
 상세한 충돌 처리, 종료 코드와 실패 복구 방법은 [init 사용법](docs/init.md)을 확인하세요.
+
+## 변경 모듈 테스트
+
+```sh
+node /absolute/path/to/dev-cycle/dist/cli.js test /absolute/path/to/project --dry-run --json
+node /absolute/path/to/dev-cycle/dist/cli.js test /absolute/path/to/project
+```
+
+정적 Groovy `settings.gradle`의 최상위 모듈과 Gradle Wrapper를 지원합니다. 비교 ref와
+프로젝트별 공통 모듈은 설정하며, 미분류 변경은 전체 테스트로 확대합니다. 실제 종료 상태,
+이번 실행의 XML 증거와 실행 전후 코드 지문을 기록합니다. 캐시나 이전 결과를 새 테스트
+통과로 표시하지 않습니다. [지원 문법, Windows 인자 제한과 기록 계약](docs/test.md)을 확인하세요.
 
 ## 개발 환경
 
@@ -64,7 +76,7 @@ npm run check
 | `npm run check` | lint → 타입 검사 → 테스트 → 빌드 순서로 전체 검증 |
 
 현재 테스트는 실제 `commit-msg` 훅과 배포 템플릿, 설정 검사와 프로젝트별 렌더링을
-비롯해 init 설치 계획, 충돌과 재실행을 확인합니다. 테스트 실행 전에 이전
+비롯해 init 설치 계획, 충돌과 재실행, Git 변경 분석, 테스트 실행과 결과 기록을 확인합니다. 테스트 실행 전에 이전
 `.test-dist/` 산출물을 지웁니다.
 
 ## 작업 규칙과 CI

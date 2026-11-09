@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "templateVersion": "0.1.1",
+  "templateVersion": "0.1.2",
   "root": "workflow",
   "files": [
     { "source": "CLAUDE.md", "target": "CLAUDE.md" },
