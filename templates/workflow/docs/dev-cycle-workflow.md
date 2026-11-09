@@ -1,6 +1,6 @@
 # dev-cycle Claude Code 워크플로
 
-이 템플릿은 TicketRush에서 사용한 Claude Code 에이전트, 명령, 스킬과 작업 메모 형식을 추출해 저장소별 규칙을 설정으로 분리한 것이다. 조사, 계획, 구현과 리뷰 판단은 Claude Code가 맡고, dev-cycle CLI는 템플릿 설치를 담당한다. 변경 영향 테스트와 실제 실행 기록 기반 보고는 후속 버전의 범위다.
+이 템플릿은 TicketRush에서 사용한 Claude Code 에이전트, 명령, 스킬과 작업 메모 형식을 추출해 저장소별 규칙을 설정으로 분리한 것이다. 조사, 계획, 구현과 리뷰 판단은 Claude Code가 맡고, dev-cycle CLI는 템플릿 설치, Gradle 변경 영향 테스트와 실제 실행 기록을 담당한다. 기록 기반 report는 후속 버전의 범위다.
 
 ## 구성
 
@@ -61,7 +61,7 @@
 - `commands`의 각 명령은 `executable`, `args`와 선택적인 `windows` 변형으로 구성한다. 값을 단순 연결하거나 eval하지 않는다. argv 인터페이스가 없으면 `/test`의 shell 인용 및 미실행 처리 규칙을 따른다.
 - `test.commonModules`와 영향 경로는 저장소별 값이다. 특정 이름을 공통 모듈로 가정하지 않는다.
 - `fullTestPaths`와 `documentationPaths`는 glob이 아니다. 파일은 정확히 일치하고 `/`로 끝나는 항목은 해당 디렉터리 아래와 일치한다.
-- 경로가 겹치면 전체 영향 경로와 공통 모듈 판정을 문서 생략보다 우선한다. 문서 경로라는 이유로 빌드 설정 변경을 생략하지 않는다. 자동 선택은 후속 CLI에서 이 계약대로 구현한다.
+- 경로가 겹치면 전체 영향 경로와 공통 모듈 판정을 문서 생략보다 우선한다. 문서 경로라는 이유로 빌드 설정 변경을 생략하지 않는다. 미분류 변경은 전체 테스트로 확대한다.
 - `artifactsDir`는 CLI 전용 상대 디렉터리이며 저장소 루트 밖이나 기존 소스, 배포 파일과 겹치는 경로를 가리킬 수 없다. 기본값이 아닌 경로를 쓰면 해당 경로도 Git 제외 대상으로 관리한다.
 
 다른 프로젝트 명령은 `commands`에 같은 구조로 추가할 수 있다. 설정되지 않은 명령을 추측해 실행하지 않는다.
@@ -100,9 +100,11 @@ Claude Code를 열어 `/agents`로 역할을 확인하고 `/resume` 또는 `/dev
 
 ## 현재 지원 상태
 
-현재 CLI는 배포용 템플릿과 설정 계약을 검사하고 `init`으로 설치한다. 변경 모듈을 선택하고 실행 기록을 남기는 `test`, 기록에서 PR 본문 초안을 만드는 `report` CLI는 아직 제공되지 않는다.
+현재 CLI는 배포용 템플릿과 설정 계약을 검사하고 `init`으로 설치한다. `test`는 정적 Groovy `settings.gradle`의 최상위 모듈을 선택해 루트 Gradle Wrapper로 실행하고 `<artifactsDir>/runs/<UUID>/record.json`에 기록한다. `report` CLI는 아직 제공되지 않는다.
 
-CLI의 `test` 명령이 아직 없으므로 `/test`는 Git 루트를 작업 디렉터리로 하여 `commands.test`의 등록 명령을 직접 실행하고 결과를 수동으로 기록한다. 실행 도구의 argv 인터페이스나 실제 shell의 인용 규칙을 사용하고, 정확한 인자 전달을 확인할 수 없으면 미실행으로 보고한다. 설정 검사는 프로세스를 실행하지 않으므로 Windows 배치 파일이나 메타문자 인자의 실제 실행 안전성을 증명하지 않는다. `/wrap-up`과 PR 스킬은 확인된 결과만 사용하며 report를 실행한 것처럼 꾸미지 않는다.
+먼저 `dev-cycle test --dry-run --json`으로 선택과 이유를 확인한 뒤 `dev-cycle test --json`으로 실행한다. `--base-ref`로 비교 ref를 명시할 수 있다. 지원 밖의 동적 설정, projectDir, composite build, Kotlin DSL은 중단한다. 기본 실행 파일은 `./gradlew`, Windows는 `./gradlew.bat`이며 args의 `test` 하나를 선택된 태스크로 교체한다. CLI는 `--console=plain`, `--no-daemon`을 사용한다. Windows 경로의 따옴표, `% ! ^ & | < > ( )`와 줄바꿈은 실행 전 거부한다. 공백과 한글은 지원한다. CLI가 없는 환경에서는 `/test`의 직접 실행 절차를 따르되 CLI 기록이 있다고 주장하지 않는다.
+
+실행 상태, 종료 코드, 이번 실행의 XML 증거와 코드 지문을 구분한다. 캐시/UP-TO-DATE/NO-SOURCE는 새 테스트 실행이 아니며, 실행 전후나 이후 코드가 바뀌면 이전 결과를 현재 코드의 통과로 사용하지 않는다. stdout/stderr는 각각 앞 1 MiB까지만 로컬 보관한다. 종료 기록이 없는 run은 미완료로 취급한다. `/wrap-up`과 PR 스킬은 확인된 결과만 사용하며 report를 실행한 것처럼 꾸미지 않는다.
 
 ## 실패와 재개
 

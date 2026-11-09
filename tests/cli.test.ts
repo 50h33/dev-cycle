@@ -56,6 +56,10 @@ test('알 수 없는 명령, 옵션과 중복 인자를 JSON 오류와 종료 �
     ['init', '--dry-run', '--dry-run'],
     ['init', '--config', 'one.json', '--config=two.json'],
     ['init', '--json', '--json'],
+    ['init', '--base-ref', 'main'],
+    ['test', '--base-ref'],
+    ['test', '--base-ref='],
+    ['test', '--base-ref', 'main', '--base-ref', 'HEAD'],
   ];
   for (const args of cases) {
     const result = invoke([...args, ...(args.includes('--json') ? [] : ['--json'])]);
@@ -71,6 +75,42 @@ test('알 수 없는 명령, 옵션과 중복 인자를 JSON 오류와 종료 �
   const misplaced = invoke(['unknown', 'init', '--json']);
   assert.equal(misplaced.status, 2, misplaced.stderr);
   assert.equal((JSON.parse(misplaced.stdout) as { command: unknown }).command, null);
+});
+
+test('test CLI는 dry-run JSON 하나와 사람용 선택 이유를 출력하고 기록을 만들지 않는다', () => {
+  const { parent, target, config } = fixture('test');
+  try {
+    const value = JSON.parse(readFileSync(config, 'utf8')) as { baseRef: string };
+    value.baseRef = 'HEAD';
+    writeFileSync(config, JSON.stringify(value));
+    writeFileSync(join(target, 'settings.gradle'), "include 'app'\n");
+    mkdirSync(join(target, 'app'));
+    writeFileSync(join(target, 'app', 'source.txt'), 'original');
+    const added = spawnSync('git', ['add', '.'], { cwd: target, encoding: 'utf8' });
+    assert.equal(added.status, 0, added.stderr);
+    const committed = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'fixture'], { cwd: target, encoding: 'utf8' });
+    assert.equal(committed.status, 0, committed.stderr);
+    writeFileSync(join(target, 'app', 'source.txt'), 'modified');
+    const preview = invoke(['test', target, '--config', config, '--dry-run', '--json']);
+    assert.equal(preview.status, 0, preview.stderr || preview.stdout);
+    assert.equal(preview.stderr, '');
+    const output = JSON.parse(preview.stdout) as { command: string; status: string; analysis: string; selection: { tasks: string[] }; recordPath: unknown };
+    assert.equal(output.command, 'test');
+    assert.equal(output.status, 'not-run');
+    assert.equal(output.analysis, 'complete');
+    assert.deepEqual(output.selection.tasks, [':app:test']);
+    assert.equal(output.recordPath, null);
+    assert.equal(existsSync(join(target, '.dev-cycle')), false);
+    const human = invoke(['test', target, '--config', config, '--base-ref=HEAD', '--dry-run']);
+    assert.equal(human.status, 0, human.stderr || human.stdout);
+    assert.match(human.stdout, /선택: modules/u);
+    const missing = invoke(['test', target, '--config', config, '--base-ref=missing-ref', '--dry-run', '--json']);
+    assert.equal(missing.status, 2);
+    assert.equal((JSON.parse(missing.stdout) as { analysis: string }).analysis, 'error');
+  } finally {
+    assert.equal(parent.startsWith(join(tmpdir(), 'dev-cycle cli test 한글 ')), true);
+    rmSync(parent, { recursive: true, force: true });
+  }
 });
 
 test('공백과 한글 경로의 빈 Git 저장소를 dry-run한 뒤 설치하고 재실행한다', () => {
