@@ -1,0 +1,25 @@
+name: Docs
+description: 문서를 추가하거나 최신 상태로 수정합니다.
+labels: ["docs"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 어떤 문서를 작업하나요?
+      placeholder: "예: README 개발 환경 안내 보완"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 작업 내용
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: 참고 자료
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건

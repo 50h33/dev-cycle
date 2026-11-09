@@ -1,0 +1,24 @@
+name: Test
+description: 테스트를 추가하거나 기존 테스트를 개선합니다.
+labels: ["test"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 어떤 테스트를 추가하거나 수정하나요?
+    validations:
+      required: true
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: 검증할 시나리오
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: 범위와 제약 사항
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건

@@ -1,0 +1,28 @@
+{
+  "name": "dev-cycle",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI 개발 흐름과 테스트를 관리하는 TypeScript CLI",
+  "type": "module",
+  "engines": {
+    "node": ">=22.17.0 <23",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "prepare": "node scripts/setup-hooks.mjs",
+    "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "tsc --project tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --project tsconfig.test.json --noEmit",
+    "pretest": "node -e \"require('node:fs').rmSync('.test-dist', { recursive: true, force: true })\"",
+    "test": "tsc --project tsconfig.test.json && node --test \".test-dist/tests/**/*.test.js\"",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.14.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0"
+  }
+}

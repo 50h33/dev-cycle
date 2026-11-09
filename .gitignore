@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.test-dist/
+coverage/
+*.tsbuildinfo
+*.log
+
+# Local tool caches
+.eslintcache
+.npm/
+.cache/
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+Thumbs.db
+
+# Personal editor settings
+.idea/
+.vscode/
+*.code-workspace
+
+.claude/settings.local.json
+.omx/
