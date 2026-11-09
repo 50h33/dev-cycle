@@ -1,0 +1,8 @@
+# dev-cycle runtime artifacts
+/{{artifactsDir}}/
+
+# Claude Code personal configuration and runtime data
+.claude/settings.local.json
+.claude/claude-progress.txt
+.claude/feature_list.json
+.claude/logs/

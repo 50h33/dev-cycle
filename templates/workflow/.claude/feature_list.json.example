@@ -1,0 +1,13 @@
+{
+  "_schema": "개인 작업 메모 예제. status=todo/doing/done, issue=연결된 이슈 번호 또는 null. 실제 파일은 Git에서 제외한다.",
+  "updated_at": "YYYY-MM-DD",
+  "current_branch": "<현재 작업 브랜치>",
+  "items": [
+    {
+      "id": 1,
+      "desc": "<작업 설명>",
+      "status": "todo",
+      "issue": null
+    }
+  ]
+}

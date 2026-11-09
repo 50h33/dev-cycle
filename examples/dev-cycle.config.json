@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "repository": "example/shop",
+  "defaultBranch": "trunk",
+  "baseRef": "origin/trunk",
+  "paths": {
+    "conventions": "AGENTS.md",
+    "issueTemplates": ".github/ISSUE_TEMPLATE",
+    "prTemplate": ".github/pull_request_template.md"
+  },
+  "commands": {
+    "test": {
+      "executable": "./gradlew",
+      "args": ["test", "--console=plain"],
+      "windows": {
+        "executable": "./gradlew.bat",
+        "args": ["test", "--console=plain"]
+      }
+    }
+  },
+  "test": {
+    "commonModules": [],
+    "fullTestPaths": [
+      "settings.gradle",
+      "build.gradle",
+      "gradle.properties",
+      "gradlew",
+      "gradlew.bat",
+      "gradle/",
+      "buildSrc/"
+    ],
+    "documentationPaths": ["docs/", "README.md"]
+  },
+  "artifactsDir": ".dev-cycle"
+}
