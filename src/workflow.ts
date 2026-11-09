@@ -50,7 +50,7 @@ function relativePath(value: unknown, path: string, directoryPrefix = false): st
   const segments = normalized.split('/');
   if (/[\\:*?"<>|]/u.test(result) || result.includes('[') || result.includes(']') || segments.some((segment) =>
     !segment || segment === '.' || segment === '..' || /[. ]$/u.test(segment)
-    || segment.toLowerCase() === '.git' || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(segment))) {
+    || segment.toLowerCase() === '.git' || /^(?:(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)|con(?:in|out)\$$)/iu.test(segment))) {
     invalid(path, '저장소 루트 기준 상대경로를 /로 구분하세요. 경로 이탈, glob과 Windows 예약 이름은 사용할 수 없습니다.');
   }
   return result;

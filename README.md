@@ -7,9 +7,34 @@ TicketRush의 기존 Claude Code 에이전트, 명령과 스킬을 추출해 다
 사용할 수 있도록 프로젝트별 설정을 분리합니다. 배포 파일은 `templates/workflow/`,
 설정 예시는 [`examples/dev-cycle.config.json`](examples/dev-cycle.config.json)에 있습니다.
 
-[추출 파일 대응, 설정 계약과 수동 사용법](docs/workflow-package.md)을 먼저 확인하세요.
-현재는 템플릿과 설정 검증을 제공하며, 자동 설치 `init`, 변경 모듈 실행 `test`,
-실행 기록 기반 `report` CLI는 후속 이슈에서 구현합니다.
+[추출 파일 대응, 설정 계약과 설치 방법](docs/workflow-package.md)을 먼저 확인하세요.
+현재는 템플릿과 설정 검증, 기존 파일을 보존하는 `init` 설치를 제공합니다.
+변경 모듈 실행 `test`와 실행 기록 기반 `report` CLI는 후속 이슈에서 구현합니다.
+
+## init으로 설치
+
+먼저 dev-cycle 저장소에서 의존성을 설치하고 CLI를 빌드합니다.
+
+```sh
+npm ci
+npm run build
+```
+
+대상 저장소에 맞춘 설정 파일을 준비한 뒤, 실제 변경 전에 dry-run으로 전체 계획을 확인합니다.
+
+```sh
+node /absolute/path/to/dev-cycle/dist/cli.js init /absolute/path/to/project \
+  --config /absolute/path/to/project-config.json \
+  --dry-run
+```
+
+충돌과 오류가 없으면 `--dry-run`만 제거해 설치합니다. 대상 Git 루트에 이미
+`dev-cycle.config.json`이 있으면 `--config`를 생략할 수 있습니다. 설정 파일 경로는
+명령을 실행한 디렉터리를 기준으로 해석하며 저장소명, 기본 브랜치나 명령을 추정하지 않습니다.
+자동화에서는 `--json`을 추가해 같은 계획과 오류를 JSON 한 개로 받습니다.
+
+기존 파일과 내용이 다르면 덮어쓰거나 자동 병합하지 않고 전체 설치를 중단합니다.
+상세한 충돌 처리, 종료 코드와 실패 복구 방법은 [init 사용법](docs/init.md)을 확인하세요.
 
 ## 개발 환경
 
@@ -39,8 +64,8 @@ npm run check
 | `npm run check` | lint → 타입 검사 → 테스트 → 빌드 순서로 전체 검증 |
 
 현재 테스트는 실제 `commit-msg` 훅과 배포 템플릿, 설정 검사와 프로젝트별 렌더링을
-확인합니다. 테스트 실행 전에 이전 `.test-dist/` 산출물을 지웁니다.
-`src/index.ts`는 설정 검사와 문자열 렌더링 함수를 내보내며 CLI 명령은 아직 없습니다.
+비롯해 init 설치 계획, 충돌과 재실행을 확인합니다. 테스트 실행 전에 이전
+`.test-dist/` 산출물을 지웁니다.
 
 ## 작업 규칙과 CI
 

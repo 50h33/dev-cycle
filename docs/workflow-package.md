@@ -1,8 +1,8 @@
 # 워크플로 추출과 배포 계약
 
 TicketRush의 기존 Claude Code 파일을 추출해 프로젝트 의존성을 분리했다.
-새 에이전트 실행 엔진이나 설치 CLI를 만든 단계는 아니다. 저장소 운영용 `.claude/`와
-다른 저장소에 제공할 `templates/workflow/`를 분리한다.
+저장소 운영용 `.claude/`와 다른 저장소에 제공할 `templates/workflow/`를 분리하며,
+init은 이 추출물을 manifest의 허용 목록에 따라 설치한다.
 
 ## 파일 대응
 
@@ -40,9 +40,13 @@ settings.local.json과 외부 grill-me/grilling 본문은 배포하지 않는다
 `templateVersion`은 배포 템플릿 버전을 나타낸다. `root`는 manifest가 있는 디렉터리
 기준 템플릿 루트이고 `files`의 source/target은 각각 템플릿 루트/대상 Git 루트 기준이다.
 목록은 허용 목록이며 디렉터리 전체를 재귀 복사하는 지시가 아니다.
+`gitignore.template`은 설치 시 `.gitignore`가 된다. npm 패키징이 `.gitignore` 원본을
+제외하므로 배포 소스에는 별도 이름을 사용한다. 현재 템플릿 버전은 `0.1.1`이다.
 
 [`src/workflow.ts`](../src/workflow.ts)는 설정 검사와 문자열 렌더링만 제공한다.
 파일 쓰기, Git 조회, 네트워크나 프로세스 실행은 하지 않는다.
+[`src/init.ts`](../src/init.ts)는 대상 Git 루트와 manifest를 검사해 전체 설치 계획을 만든 뒤,
+충돌이 없는 실제 실행에서만 파일을 쓴다.
 
 - `parseWorkflowConfig(unknown)`: 검증한 설정을 반환한다. 오류에는 항목 경로와 수정 방법이 있다.
 - `renderWorkflowTemplate(text, config)`: `{{configJson}}`은 JSON 데이터로,
@@ -55,8 +59,8 @@ settings.local.json과 외부 grill-me/grilling 본문은 배포하지 않는다
 
 설정 적용 순서는 명시적 `baseRef`, 그 값이 없으면 `defaultBranch`다. 나머지 필드는
 명시해야 한다. 이 단계에서는 환경변수/전역 설정 병합이나 origin 추론을 하지 않는다.
-향후 init이 로컬 Git 메타데이터에서 후보를 찾더라도 설치 전에 그 값을 보여줘야 한다.
-원격 조회나 임의 fetch로 값을 결정하지 않는다.
+init도 이 값을 origin, 현재 브랜치나 원격 조회로 추정하지 않는다. 대상 루트의 기존 설정이나
+`--config`로 명시한 설정만 사용하고 설치 전에 검증한 값을 보여준다.
 
 알 수 없는 키, 미지원 schemaVersion, 잘못된 저장소/ref, 경로 이탈, Windows 예약 이름,
 잘못된 명령/인자 구조와 산출물 경로 충돌을 거부한다. 경로는 `/` 구분 상대경로이며
@@ -67,21 +71,35 @@ globs를 쓰지 않는다. 영향 경로 목록에서만 마지막 `/`가 디렉
 `commands.test`는 필수이고 다른 명령은 같은 구조로 추가한다. `windows`가 있으면
 Windows에서 executable과 args 둘 다 그 값으로 대체하며 배열을 이어 붙이지 않는다.
 
-이 검사는 문자열 계약 검사다. 실제 파일 존재, 링크/junction, 이미 추적되는 소스와의
-산출물 경로 충돌, 설치 충돌은 init 구현에서 검사해야 한다. 필수 Git/Node 외의 명령,
-Claude Code, JDK와 Gradle을 설치하거나 권한을 추가하지 않는다.
+설정 검사는 문자열 계약 검사이며 init은 실제 파일, 링크/junction, 이미 추적되는 소스와의
+산출물 경로 충돌과 설치 충돌을 추가로 검사한다. 필수 Git/Node 외의 명령, Claude Code,
+JDK와 Gradle을 설치하거나 권한을 추가하지 않는다.
 
-## 현재 다른 저장소에서 사용하는 방법
+## 다른 저장소에 설치
 
-자동 설치 명령 `dev-cycle init`은 아직 없다. 먼저 폐기 가능한 빈 Git 저장소에서 확인한다.
+dev-cycle을 빌드하고 대상 프로젝트 설정을 준비한 뒤, 먼저 `init --dry-run`으로 19개
+대상 파일의 생성, 유지, 충돌과 오류를 확인한다. 충돌 또는 사전 검사 오류가 하나라도 있으면
+새 파일도 쓰지 않는다. 기존 파일을 덮어쓰거나 자동 병합하는 옵션은 없다.
 
-1. manifest의 source/target 목록을 확인한다. 원본 TicketRush 저장소를 대상으로 복사하지 않는다.
-2. 일반 파일은 명시된 target으로 수동 복사한다. `.template` 파일은 그대로 복사하지 않는다.
-3. 설정 예시를 대상 루트 `dev-cycle.config.json`으로 복사하고 실제 저장소, 브랜치, 문서 경로와 명령을 채운다.
-4. `.gitignore`의 `{{artifactsDir}}`를 설정의 전용 디렉터리로 바꾼다. 기존 파일이 있다면 내용을 검토해 수동으로 합친다.
-5. 기존 CLAUDE.md/settings.json/스킬이 있으면 덮어쓰지 않는다. 충돌 목록을 먼저 정리하고 적용할 부분을 직접 선택한다.
-6. 설정된 지침과 이슈/PR 양식, 실행 파일이 실제 존재하는지 확인한다. 저장소 운영 규칙과 CI는 가져오지 않는다.
-7. Claude Code를 대상 Git 루트에서 열고 `/agents`에서 네 역할을 확인한다. `/resume`, `/dev-cycle <이슈 번호>` 등으로 사용한다.
+```sh
+npm ci
+npm run build
+node /absolute/path/to/dev-cycle/dist/cli.js init /absolute/path/to/project \
+  --config /absolute/path/to/project-config.json \
+  --dry-run
+```
+
+대상 Git 루트에 유효한 `dev-cycle.config.json`이 있으면 `--config`를 생략할 수 있다.
+dry-run이 준비 상태로 끝나면 `--dry-run`을 제거해 적용한다. 설정된 지침과 이슈/PR 양식의
+경로가 없으면 경고한다. 경로의 용도에 맞는 파일/디렉터리인지와 실행 파일의 존재/실행 가능
+여부는 검사하지 않으므로 대상 프로젝트에서 확인해야 한다. 저장소 운영 규칙과 CI는
+가져오지 않는다. 설치 후 대상 Git 루트에서 Claude Code를 열고 `/agents`에서 네 역할을
+확인한 뒤 `/resume`, `/dev-cycle <이슈 번호>` 등을 사용한다.
+
+명령, 충돌 처리, JSON 출력, 종료 코드와 쓰기 실패 복구는 [init 사용법](init.md)을 따른다.
+기존 `.gitignore`는 렌더링된 블록 전체를 파일 끝에 수동 추가하면 유지할 수 있다. 다른
+공유 파일의 사용자 병합본은 계속 충돌할 수 있으므로 프로젝트 규칙과 개인 권한을 별도
+지침 파일과 `settings.local.json`으로 분리하는 방식을 우선한다.
 
 현재 `/test`는 Git 루트를 작업 디렉터리로 하여 등록된 프로젝트 명령을 직접 실행하도록 안내한다. CLI의 변경 모듈 자동 선택,
 버전 있는 결과 기록과 `report`는 아직 없다. 실행 결과와 당시 코드 상태를 직접 기록하고
@@ -94,7 +112,8 @@ Claude Code, JDK와 Gradle을 설치하거나 권한을 추가하지 않는다.
 ## 검증 경계
 
 `npm run check`는 설정 오류, 두 프로젝트 렌더링, 배포 허용 목록, 내부 링크,
-Git 제외 규칙과 기존 훅을 검사한다. 임시 Git 저장소를 쓰며 외부 서비스/Gradle/Claude 인증은 필요 없다.
+Git 제외 규칙과 기존 훅에 더해 빈 Git 저장소 설치, dry-run 무변경, 충돌 시 전체 중단과
+동일 저장소 재실행을 검사한다. 임시 Git 저장소를 쓰며 외부 서비스/Gradle/Claude 인증은 필요 없다.
 
 Claude Code 파일 형식 확인은 별도로 격리된 디렉터리에서
 `claude plugin validate .claude --strict --json`으로 수행한다. 2.1.289에서 원본 형식의
