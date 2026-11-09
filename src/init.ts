@@ -85,7 +85,8 @@ function directory(path: string): string {
     const found = fs.lstatSync(current);
     if (found.isSymbolicLink() || !found.isDirectory()) throw new Error(`${current}: 링크가 아닌 실제 디렉터리를 지정하세요.`);
   }
-  return fs.realpathSync(absolute);
+  // Canonicalize Windows 8.3 aliases before comparing filesystem paths with Git's root.
+  return fs.realpathSync.native(absolute);
 }
 
 function git(root: string, args: string[], input?: string, allowedExitCodes: readonly number[] = [0]): string {

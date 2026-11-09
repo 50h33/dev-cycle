@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fsDefault from 'node:fs';
 import {
@@ -78,7 +78,7 @@ test('첫 커밋이 없는 공백/한글 경로 저장소에 manifest 파일만 
     const first = runInit({ cwd: workspace, target: relative(workspace, nested), configPath: '설정 파일.json' });
     assert.equal(first.exitCode, 0, first.errors.join('\n'));
     assert.equal(first.status, 'completed');
-    assert.equal(first.root, root);
+    assert.equal(first.root, fsDefault.realpathSync.native(root));
     assert.deepEqual(first.files.map((file) => file.path).sort(), manifest.files.map((file) => file.target).sort());
     assert.equal(first.files.every((file) => file.status === 'created'), true);
     assert.deepEqual(JSON.parse(readFileSync(join(root, 'dev-cycle.config.json'), 'utf8')), first.config);
@@ -150,6 +150,35 @@ test('dry-run은 반복해도 대상 파일, Git 내부 상태와 출력 계획�
   }
 });
 
+test('Windows 8.3 별칭과 긴 Git 루트를 같은 디렉터리로 처리한다', { skip: process.platform !== 'win32' }, (context) => {
+  const workspace = temporaryWorkspace('short path');
+  try {
+    const root = join(workspace, 'target');
+    initializeGit(root);
+    writeJson(join(workspace, 'input.json'), example);
+    const shortResult = spawnSync('cmd.exe', ['/d', '/u', '/s', '/c', 'for %I in ("%DEV_CYCLE_TEST_PATH%") do @echo %~sI'], {
+      env: { ...process.env, DEV_CYCLE_TEST_PATH: root }, encoding: 'utf16le', windowsVerbatimArguments: true,
+    });
+    assert.equal(shortResult.status, 0, shortResult.stderr);
+    const shortPath = shortResult.stdout.trim();
+    const canonical = fsDefault.realpathSync.native(root);
+    if (shortPath.toLowerCase() === canonical.toLowerCase()) {
+      context.skip('파일 시스템에서 이 경로의 8.3 별칭을 제공하지 않습니다.');
+      return;
+    }
+    const before = repositorySnapshot(root);
+    const options = { cwd: workspace, target: shortPath, configPath: 'input.json' };
+    const preview = runInit({ ...options, dryRun: true });
+    assert.equal(preview.status, 'ready', preview.errors.join('\n'));
+    assert.equal(preview.root, canonical);
+    assert.deepEqual(repositorySnapshot(root), before);
+    assert.equal(runInit(options).status, 'completed');
+    const repeated = runInit({ cwd: root });
+    assert.equal(repeated.status, 'completed', repeated.errors.join('\n'));
+    assert.equal(repeated.root, canonical);
+  } finally { removeWorkspace(workspace); }
+});
+
 test('dry-run은 상속한 Git trace 환경과 전역 trace2 설정으로도 로그를 생성하지 않는다', () => {
   const workspace = temporaryWorkspace('trace settings');
   const previousTrace = process.env.GIT_TRACE;
@@ -196,7 +225,7 @@ test('Windows의 소문자 Git 환경변수가 대상 저장소 조회를 바꾸
     for (const name of names) process.env[name] = join(workspace, 'wrong-repository');
     const result = runInit({ cwd: workspace, target: 'target', configPath: 'input.json', dryRun: true });
     assert.equal(result.status, 'ready', result.errors.join('\n'));
-    assert.equal(result.root, root);
+    assert.equal(result.root, fsDefault.realpathSync.native(root));
     assert.deepEqual(repositorySnapshot(root), before);
   } finally {
     for (const name of names) delete process.env[name];
@@ -217,7 +246,7 @@ test('상속한 Git 탐색 제한이 하위 디렉터리에서 저장소 루트�
     process.env.GIT_CEILING_DIRECTORIES = root;
     const result = runInit({ cwd: workspace, target: 'target/nested', configPath: 'input.json', dryRun: true });
     assert.equal(result.status, 'ready', result.errors.join('\n'));
-    assert.equal(result.root, root);
+    assert.equal(result.root, fsDefault.realpathSync.native(root));
     assert.deepEqual(repositorySnapshot(root), before);
   } finally {
     if (previous === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = previous;

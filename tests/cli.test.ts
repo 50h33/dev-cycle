@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -83,7 +83,7 @@ test('공백과 한글 경로의 빈 Git 저장소를 dry-run한 뒤 설치하�
     };
     assert.equal(preview.status, 'ready');
     assert.equal(preview.dryRun, true);
-    assert.equal(preview.root, resolve(target));
+    assert.equal(preview.root, realpathSync.native(target));
     assert.equal(preview.files.every((file) => file.status === 'create'), true);
     assert.equal(preview.exitCode, 0);
     assert.equal(existsSync(join(target, 'CLAUDE.md')), false);

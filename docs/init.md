@@ -41,6 +41,7 @@ Git 루트를 찾으며 첫 커밋이 없는 일반 저장소도 지원한다. G
 디렉터리를 기준으로 한다. `--config`를 생략하면 대상 Git 루트의
 `dev-cycle.config.json`을 읽는다.
 명시적으로 전달한 빈 경로는 오류다. 빈 문자열을 현재 저장소나 기본 설정으로 바꾸지 않는다.
+Windows의 8.3 짧은 경로 별칭은 실제 긴 경로로 정규화하며 출력의 `root`도 이 경로를 사용한다.
 
 dry-run이 `ready`이고 종료 코드가 0이면 같은 명령에서 `--dry-run`만 제거해 설치한다.
 dry-run은 대상 파일과 디렉터리, Git 설정, 로그와 메모를 만들거나 수정하지 않는다.
@@ -140,7 +141,7 @@ TicketRush 원본에는 dry-run만 적용한다. 실제 파일 생성과 재실�
 ## 검증 기록
 
 2026-11-09 Windows / Node.js 22.17.0에서 `npm run check`의 lint, 타입 검사,
-테스트 72개와 빌드를 통과했다. 핵심 검사는 Node와 Git만 사용하며 외부 서비스나
+테스트 73개와 빌드를 통과했다. 핵심 검사는 Node와 Git만 사용하며 외부 서비스나
 실제 Gradle, Claude 인증이 필요하지 않다.
 
 - 공백과 한글 경로의 빈 Git 저장소, 충돌, 반복 dry-run, 재실행, 링크/junction,
@@ -148,6 +149,8 @@ TicketRush 원본에는 dry-run만 적용한다. 실제 파일 생성과 재실�
 - 추가 검토에서 Git trace 로그 생성, 소문자 Git 환경변수, 빈 경로, Windows 예약 장치 이름,
   첫 설치의 하위 Git 제외 예외, CRLF 재설치 문제를 재현하고 수정 전 실패/수정 후 통과를 확인했다.
   Git 탐색 제한 환경변수에 영향을 받지 않는 하위 경로 조회도 검사했다.
+- Windows CI에서 드러난 8.3 별칭/Git 루트 비교 오류를 로컬에서 재현했다. 별칭 경로의
+  dry-run, 실제 설치와 재실행을 검사하며 별칭 조회에 Windows 기본 `cmd.exe`를 사용한다.
 - 로컬 tarball 설치 후 패키지의 CLI로 19개 파일 dry-run을 확인했다.
   소스 checkout의 빌드 CLI로는 격리 저장소에 19개 파일 실제 설치와 무변경 재실행을 확인했다.
 - TicketRush 원본 dry-run은 기존 파일 17개의 충돌을 반환했고, 설치 대상과 상위 경로의
@@ -155,5 +158,5 @@ TicketRush 원본에는 dry-run만 적용한다. 실제 파일 생성과 재실�
 - 격리된 설치물의 `claude plugin validate .claude --strict --json`은 종료 코드 0이었다.
   결과의 `contents`가 빈 배열이므로 실제 `/agents` 발견이나 모델 실행을 검증한 결과로 보지 않는다.
 
-이번 변경의 Ubuntu 실행과 GitHub Actions 결과는 아직 확인하지 않았다.
+GitHub Actions의 커밋별 결과는 PR Checks에서 별도로 확인한다.
 기존 Windows/Ubuntu CI가 동일한 자동 테스트를 실행하도록 유지한다.
