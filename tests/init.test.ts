@@ -395,7 +395,7 @@ test('manifest의 루트 이탈, 대소문자 중복과 파일/디렉터리 pref
   ];
 
   for (const [name, mutate] of cases) {
-    const workspace = temporaryWorkspace(name);
+    const workspace = temporaryWorkspace('manifest');
     try {
       const root = join(workspace, 'target');
       initializeGit(root);
