@@ -1,6 +1,16 @@
 # dev-cycle
 AI 개발 흐름과 테스트를 관리하는 TypeScript CLI
 
+## 워크플로 템플릿
+
+TicketRush의 기존 Claude Code 에이전트, 명령과 스킬을 추출해 다른 저장소에서도
+사용할 수 있도록 프로젝트별 설정을 분리합니다. 배포 파일은 `templates/workflow/`,
+설정 예시는 [`examples/dev-cycle.config.json`](examples/dev-cycle.config.json)에 있습니다.
+
+[추출 파일 대응, 설정 계약과 수동 사용법](docs/workflow-package.md)을 먼저 확인하세요.
+현재는 템플릿과 설정 검증을 제공하며, 자동 설치 `init`, 변경 모듈 실행 `test`,
+실행 기록 기반 `report` CLI는 후속 이슈에서 구현합니다.
+
 ## 개발 환경
 
 - Node.js 22.x (22.17.0 이상), npm 10 이상, Git
@@ -28,9 +38,9 @@ npm run check
 | `npm run build` | 이전 `dist/`를 비우고 `src/`를 컴파일 |
 | `npm run check` | lint → 타입 검사 → 테스트 → 빌드 순서로 전체 검증 |
 
-현재 테스트는 실제 `commit-msg` 훅의 허용 타입, Git 예외 메시지, Windows 줄바꿈과
-잘못된 형식의 거부 동작을 확인합니다. 테스트 실행 전에 이전 `.test-dist/` 산출물을 지웁니다.
-`src/index.ts`는 빌드 확인용 빈 모듈이며, CLI 명령과 업무 기능은 후속 이슈에서 구현합니다.
+현재 테스트는 실제 `commit-msg` 훅과 배포 템플릿, 설정 검사와 프로젝트별 렌더링을
+확인합니다. 테스트 실행 전에 이전 `.test-dist/` 산출물을 지웁니다.
+`src/index.ts`는 설정 검사와 문자열 렌더링 함수를 내보내며 CLI 명령은 아직 없습니다.
 
 ## 작업 규칙과 CI
 

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "templateVersion": "0.1.0",
+  "root": "workflow",
+  "files": [
+    { "source": "CLAUDE.md", "target": "CLAUDE.md" },
+    { "source": "dev-cycle.config.json.template", "target": "dev-cycle.config.json" },
+    { "source": ".gitignore", "target": ".gitignore" },
+    { "source": "docs/dev-cycle-workflow.md", "target": "docs/dev-cycle-workflow.md" },
+    { "source": ".claude/settings.json", "target": ".claude/settings.json" },
+    { "source": ".claude/agents/researcher.md", "target": ".claude/agents/researcher.md" },
+    { "source": ".claude/agents/planner.md", "target": ".claude/agents/planner.md" },
+    { "source": ".claude/agents/reviewer.md", "target": ".claude/agents/reviewer.md" },
+    { "source": ".claude/agents/gardener.md", "target": ".claude/agents/gardener.md" },
+    { "source": ".claude/commands/dev-cycle.md", "target": ".claude/commands/dev-cycle.md" },
+    { "source": ".claude/commands/test.md", "target": ".claude/commands/test.md" },
+    { "source": ".claude/commands/review-pr.md", "target": ".claude/commands/review-pr.md" },
+    { "source": ".claude/commands/resume.md", "target": ".claude/commands/resume.md" },
+    { "source": ".claude/commands/wrap-up.md", "target": ".claude/commands/wrap-up.md" },
+    { "source": ".claude/skills/issue/SKILL.md", "target": ".claude/skills/issue/SKILL.md" },
+    { "source": ".claude/skills/pr/SKILL.md", "target": ".claude/skills/pr/SKILL.md" },
+    { "source": ".claude/skills/apply-review/SKILL.md", "target": ".claude/skills/apply-review/SKILL.md" },
+    { "source": ".claude/claude-progress.txt.example", "target": ".claude/claude-progress.txt.example" },
+    { "source": ".claude/feature_list.json.example", "target": ".claude/feature_list.json.example" }
+  ]
+}
