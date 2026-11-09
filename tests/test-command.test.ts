@@ -240,12 +240,13 @@ test('잘못된 비교 ref와 지원하지 않는 settings 문법을 분석 성�
 
 test('변경 분석 중 코드가 바뀌면 실행과 기록 전에 명시적으로 중단한다', async (context) => {
   const root = repository();
+  const settingsPath = join(fs.realpathSync.native(root), 'settings.gradle');
   fs.appendFileSync(join(root, 'api/src/Main.java'), '// initial change\n');
   const originalRead = fsDefault.readFileSync.bind(fsDefault) as typeof fsDefault.readFileSync;
   let settingsReads = 0;
   let changed = false;
   context.mock.method(fsDefault, 'readFileSync', ((path: fs.PathOrFileDescriptor, options?: unknown) => {
-    if (typeof path === 'string' && path === join(root, 'settings.gradle') && options === 'utf8') {
+    if (typeof path === 'string' && path === settingsPath && options === 'utf8') {
       settingsReads += 1;
       if (settingsReads === 2) {
         fs.appendFileSync(join(root, 'api/src/Main.java'), '// changed during analysis\n');
@@ -275,6 +276,7 @@ test('변경 분석 중 코드가 바뀌면 실행과 기록 전에 명시적으
 
 test('변경 분석 중 비교 ref가 다른 기존 commit으로 이동하면 실행 전에 중단한다', async (context) => {
   const root = repository({ baseRef: 'base' });
+  const settingsPath = join(fs.realpathSync.native(root), 'settings.gradle');
   git(root, ['branch', 'base']);
   fs.appendFileSync(join(root, 'README.md'), 'base candidate\n');
   git(root, ['add', 'README.md']);
@@ -288,7 +290,7 @@ test('변경 분석 중 비교 ref가 다른 기존 commit으로 이동하면 �
   const originalRead = fsDefault.readFileSync.bind(fsDefault) as typeof fsDefault.readFileSync;
   let settingsReads = 0;
   context.mock.method(fsDefault, 'readFileSync', ((path: fs.PathOrFileDescriptor, options?: unknown) => {
-    if (typeof path === 'string' && path === join(root, 'settings.gradle') && options === 'utf8') {
+    if (typeof path === 'string' && path === settingsPath && options === 'utf8') {
       settingsReads += 1;
       if (settingsReads === 2) git(root, ['update-ref', 'refs/heads/base', movedBase]);
     }

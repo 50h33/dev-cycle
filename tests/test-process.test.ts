@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -23,7 +23,7 @@ test('Gradle Wrapper와 제한된 옵션만 사용하고 선택 태스크를 교
   const root = workspace('prepare');
   try {
     const command = prepareTestCommand(root, config(), [':app:test'], 'linux');
-    assert.equal(command.executable, join(root, 'gradlew'));
+    assert.equal(command.executable, join(realpathSync.native(root), 'gradlew'));
     assert.deepEqual(command.args, [':app:test', '--console=plain', '--no-daemon']);
     assert.deepEqual(prepareTestCommand(root, config(), [':한글-모듈:test'], 'linux').args, [':한글-모듈:test', '--console=plain', '--no-daemon']);
     const windows = prepareTestCommand(root, config(), ['test'], 'win32');
