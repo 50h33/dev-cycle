@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "templateVersion": "0.1.0",
+  "templateVersion": "0.1.1",
   "root": "workflow",
   "files": [
     { "source": "CLAUDE.md", "target": "CLAUDE.md" },
     { "source": "dev-cycle.config.json.template", "target": "dev-cycle.config.json" },
-    { "source": ".gitignore", "target": ".gitignore" },
+    { "source": "gitignore.template", "target": ".gitignore" },
     { "source": "docs/dev-cycle-workflow.md", "target": "docs/dev-cycle-workflow.md" },
     { "source": ".claude/settings.json", "target": ".claude/settings.json" },
     { "source": ".claude/agents/researcher.md", "target": ".claude/agents/researcher.md" },

@@ -61,7 +61,7 @@ for (const [name, mutate, message] of invalidCases) {
 }
 
 test('Windows에서도 사용할 수 없는 상대경로를 거부한다', () => {
-  for (const path of ['C:/data', '/data', 'docs\\guide.md', 'docs//a', './a', '.git/config', 'docs/NUL.md', 'docs/a.']) {
+  for (const path of ['C:/data', '/data', 'docs\\guide.md', 'docs//a', './a', '.git/config', 'docs/NUL.md', 'docs/a.', 'CONIN$', 'CONOUT$', 'COM¹', 'LPT².txt']) {
     const config = parseWorkflowConfig(example);
     config.paths.conventions = path;
     assert.throws(() => parseWorkflowConfig(config), /paths.conventions/);

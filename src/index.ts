@@ -1,3 +1,5 @@
-// TypeScript 빌드 진입점. CLI 업무 기능은 후속 이슈에서 구현한다.
+// Library entry point; the executable CLI lives in cli.ts.
 export { parseWorkflowConfig, renderWorkflowTemplate } from './workflow.js';
 export type { CommandSpec, WorkflowConfig } from './workflow.js';
+export { runInit } from './init.js';
+export type { InitOptions, InitFile, InitResult } from './init.js';
