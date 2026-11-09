@@ -1,6 +1,6 @@
 # dev-cycle Claude Code 워크플로
 
-이 템플릿은 TicketRush에서 사용한 Claude Code 에이전트, 명령, 스킬과 작업 메모 형식을 추출해 저장소별 규칙을 설정으로 분리한 것이다. 조사, 계획, 구현과 리뷰 판단은 Claude Code가 맡고, dev-cycle CLI는 템플릿 설치, Gradle 변경 영향 테스트와 실제 실행 기록을 담당한다. 기록 기반 report는 후속 버전의 범위다.
+이 템플릿은 TicketRush에서 사용한 Claude Code 에이전트, 명령, 스킬과 작업 메모 형식을 추출해 저장소별 규칙을 설정으로 분리한 것이다. 조사, 계획, 구현과 리뷰 판단은 Claude Code가 맡고, dev-cycle CLI는 템플릿 설치, Gradle 변경 영향 테스트, 실제 실행 기록과 기록 기반 report를 담당한다.
 
 ## 구성
 
@@ -93,18 +93,22 @@ Claude Code를 열어 `/agents`로 역할을 확인하고 `/resume` 또는 `/dev
 4. 승인된 범위에서 구현과 테스트 코드를 작성한다.
 5. `/test`가 실제 테스트를 실행한다.
 6. reviewer가 기준 ref와 현재 변경을 검토하고 타당한 지적을 반영한다.
-7. `/wrap-up` 또는 향후 CLI `report`가 확인된 결과를 요약한다.
+7. CLI `report`가 최신 실행 기록과 현재 코드의 신선도를 확인해 PR 검증 블록을 만들고 `/wrap-up`이 나머지 확인된 작업을 요약한다.
 8. 커밋, push, PR과 리뷰 답글은 사용자가 요청한 외부 변경 범위에서 수행한다.
 
 이미 승인된 로컬 구현과 실패 수정은 반복 확인 없이 이어간다. 승인되지 않은 범위 확대, 외부 게시와 되돌리기 어려운 변경은 별도 결정으로 남긴다.
 
 ## 현재 지원 상태
 
-현재 CLI는 배포용 템플릿과 설정 계약을 검사하고 `init`으로 설치한다. `test`는 정적 Groovy `settings.gradle`의 최상위 모듈을 선택해 루트 Gradle Wrapper로 실행하고 `<artifactsDir>/runs/<UUID>/record.json`에 기록한다. `report` CLI는 아직 제공되지 않는다.
+현재 CLI는 배포용 템플릿과 설정 계약을 검사하고 `init`으로 설치한다. `test`는 정적 Groovy `settings.gradle`의 최상위 모듈을 선택해 루트 Gradle Wrapper로 실행하고 `<artifactsDir>/runs/<UUID>/record.json`에 기록한다. `report`는 최신 기록과 현재 코드/설정을 비교해 PR 본문용 Markdown을 stdout으로 출력한다.
 
 먼저 `dev-cycle test --dry-run --json`으로 선택과 이유를 확인한 뒤 `dev-cycle test --json`으로 실행한다. `--base-ref`로 비교 ref를 명시할 수 있다. 지원 밖의 동적 설정, projectDir, composite build, Kotlin DSL은 중단한다. 기본 실행 파일은 `./gradlew`, Windows는 `./gradlew.bat`이며 args의 `test` 하나를 선택된 태스크로 교체한다. CLI는 `--console=plain`, `--no-daemon`을 사용한다. Windows 경로의 따옴표, `% ! ^ & | < > ( )`와 줄바꿈은 실행 전 거부한다. 공백과 한글은 지원한다. CLI가 없는 환경에서는 `/test`의 직접 실행 절차를 따르되 CLI 기록이 있다고 주장하지 않는다.
 
-실행 상태, 종료 코드, 이번 실행의 XML 증거와 코드 지문을 구분한다. 캐시/UP-TO-DATE/NO-SOURCE는 새 테스트 실행이 아니며, 실행 전후나 이후 코드가 바뀌면 이전 결과를 현재 코드의 통과로 사용하지 않는다. stdout/stderr는 각각 앞 1 MiB까지만 로컬 보관한다. 종료 기록이 없는 run은 미완료로 취급한다. `/wrap-up`과 PR 스킬은 확인된 결과만 사용하며 report를 실행한 것처럼 꾸미지 않는다.
+실행 상태, 종료 코드, 이번 실행의 XML 증거와 코드 지문을 구분한다. 캐시/UP-TO-DATE/NO-SOURCE는 새 테스트 실행이 아니며, 실행 전후나 이후 코드가 바뀌면 이전 결과를 현재 코드의 통과로 사용하지 않는다. stdout/stderr는 각각 앞 1 MiB까지만 로컬 보관한다. 종료 기록이 없는 run은 미완료로 취급한다.
+
+`dev-cycle report`는 기본적으로 가장 최근에 시작한 기록을 선택한다. 최신 실패/중단을 과거 성공으로 바꾸지 않으며 잘못된 run 디렉터리나 손상된 기록을 건너뛰지 않는다. `--run-id`로 유효한 UUID를 명시할 수 있지만 과거 기록은 현재 코드와 다시 비교한다. 기록이 없으면 미실행으로 표시한다. 저장된 합계 외의 실패 이름, 커버리지, 수동 시연과 원격 CI 결과는 추측하지 않는다.
+
+기본 출력은 Markdown stdout이고 `--json`은 Markdown, 선택한 실행 기록과 신선도를 JSON 하나로 출력한다. `--output` 파일은 `<artifactsDir>/reports/` 아래 새 Markdown 파일만 허용하며 기존 파일, 링크나 추적 파일을 덮어쓰지 않는다. `--dry-run`은 파일과 디렉터리를 만들지 않는다. report가 `changed`, `unknown`, `incomplete`를 표시하면 `/wrap-up`과 PR 스킬도 현재 코드 미검증 표시를 유지한다.
 
 ## 실패와 재개
 
