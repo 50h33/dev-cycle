@@ -1,0 +1,25 @@
+name: Chore
+description: 설정, 빌드, 의존성, 개발 환경을 정리합니다.
+labels: ["chore"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 어떤 작업인가요?
+      placeholder: "예: TypeScript 개발 환경 구성"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 작업 내용
+    validations:
+      required: true
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: 제외 범위
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건

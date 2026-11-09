@@ -1,0 +1,27 @@
+name: Feature
+description: 새로운 CLI 기능이나 사용자 동작을 추가합니다.
+labels: ["feature"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 어떤 기능을 추가하나요?
+      placeholder: "예: 변경된 모듈만 선택해 테스트하기"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 작업 내용
+      description: 입력, 출력, 주요 동작을 구체적으로 작성해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: 참고 사항
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건
+      placeholder: "- [ ] 주요 시나리오가 테스트를 통과한다"

@@ -1,0 +1,25 @@
+name: Infra
+description: CI, 배포, 실행 환경 같은 인프라를 구성합니다.
+labels: ["infra"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 어떤 인프라 작업인가요?
+      placeholder: "예: GitHub Actions 코드 검증 워크플로 구성"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 작업 내용
+    validations:
+      required: true
+  - type: textarea
+    id: operations
+    attributes:
+      label: 운영 및 보안 고려 사항
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건

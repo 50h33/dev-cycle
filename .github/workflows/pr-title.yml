@@ -1,0 +1,30 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title format
+        shell: bash
+        # 제목을 셸 코드에 직접 보간하지 않는다.
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          printf 'PR Title: %s\n' "$TITLE"
+          REGEX='^\[(Feat|Fix|Refactor|Docs|Test|Chore|Infra)\] #[1-9][0-9]*(, ?#?[1-9][0-9]*)* [^[:space:]].*$'
+          if [[ "$TITLE" == *$'\n'* || "$TITLE" == *$'\r'* || ! "$TITLE" =~ $REGEX ]]; then
+            printf '%s\n' \
+              'PR 제목 형식이 올바르지 않습니다.' \
+              '단일 이슈: [Chore] #1 TypeScript 개발 환경 구성' \
+              '다중 이슈: [Chore] #1, #2 개발 환경 설정 보완' \
+              '허용 Type: Feat, Fix, Refactor, Docs, Test, Chore, Infra'
+            exit 1
+          fi

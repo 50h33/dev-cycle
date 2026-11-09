@@ -1,0 +1,27 @@
+name: Refactor
+description: 외부 동작을 유지하면서 코드 구조를 개선합니다.
+labels: ["refactor"]
+body:
+  - type: input
+    id: target
+    attributes:
+      label: 어떤 부분을 리팩터링하나요?
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: 리팩터링 이유
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 작업 내용
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건
+      placeholder: "- [ ] 기존 동작을 검증하는 테스트가 통과한다"

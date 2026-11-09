@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+commit_msg_file="$1"
+first_line="$(head -n 1 "$commit_msg_file" | tr -d '\r')"
+
+# Git이 만드는 병합·되돌리기 및 autosquash 커밋은 허용한다.
+case "$first_line" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *)
+    exit 0
+    ;;
+esac
+
+# [Type] #이슈번호 한 줄 요약
+pattern='^\[(Feat|Fix|Docs|Refactor|Test|Chore|Infra)\] #[1-9][0-9]* [^[:space:]].*$'
+
+if ! printf '%s\n' "$first_line" | grep -Eq "$pattern"; then
+  printf '%s\n' \
+    '커밋 메시지 형식이 올바르지 않습니다.' \
+    '형식: [Type] #이슈번호 한 줄 요약' \
+    '허용 Type: Feat, Fix, Docs, Refactor, Test, Chore, Infra' \
+    '예시: [Chore] #1 TypeScript 개발 환경 구성' \
+    "현재 입력: $first_line"
+  exit 1
+fi
