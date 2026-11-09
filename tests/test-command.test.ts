@@ -409,6 +409,18 @@ test('완료 기록의 상태와 실행 결과 또는 증거 경로가 모순되
     { ...structuredClone(result), artifactsDir: '../outside' },
     { ...structuredClone(result), runId: '00000000-0000-0000-0000-000000000000' },
     { ...structuredClone(result), execution: { ...result.execution!, exitCode: 7 } },
+    ...(['failed', 'interrupted', 'not-run'] as const).map((status) => ({
+      ...structuredClone(result), status, exitCode: status === 'interrupted' ? 130 as const : 2 as const, execution: null,
+    })),
+    { ...structuredClone(result), status: 'not-run', exitCode: 2, execution: { ...result.execution!, started: false, exitCode: null } },
+    { ...structuredClone(result), evidence: { ...result.evidence!, files: [] } },
+    { ...structuredClone(result), evidence: { ...result.evidence!, counts: null, hasFailures: true, files: [] } },
+    { ...structuredClone(result), evidence: { ...result.evidence!, hasFailures: true } },
+    { ...structuredClone(result), status: 'failed', exitCode: 1 },
+    { ...structuredClone(result), status: 'failed', exitCode: 2 },
+    { ...structuredClone(result), status: 'interrupted', exitCode: 130 },
+    { ...structuredClone(result), status: 'failed', exitCode: 1, execution: { ...result.execution!, exitCode: null } },
+    { ...structuredClone(result), execution: { ...result.execution!, cleanupError: 'unexpected cleanup failure' } },
     ...(['analysis', 'comparison', 'selection', 'invocation', 'evidence', 'before', 'after'] as const)
       .map((key) => ({ ...structuredClone(result), [key]: key === 'analysis' ? 'error' : null } as TestResult)),
     ...(['analysis', 'comparison', 'before', 'after'] as const)

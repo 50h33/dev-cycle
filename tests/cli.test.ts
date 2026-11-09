@@ -60,6 +60,15 @@ test('알 수 없는 명령, 옵션과 중복 인자를 JSON 오류와 종료 �
     ['test', '--base-ref'],
     ['test', '--base-ref='],
     ['test', '--base-ref', 'main', '--base-ref', 'HEAD'],
+    ['test', '--run-id', 'anything'],
+    ['init', '--output', '.dev-cycle/reports/result.md'],
+    ['report', '--base-ref', 'main'],
+    ['report', '--run-id'],
+    ['report', '--run-id='],
+    ['report', '--run-id', 'first', '--run-id=second'],
+    ['report', '--output'],
+    ['report', '--output='],
+    ['report', '--output', 'first', '--output=second'],
   ];
   for (const args of cases) {
     const result = invoke([...args, ...(args.includes('--json') ? [] : ['--json'])]);

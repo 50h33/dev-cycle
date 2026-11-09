@@ -8,8 +8,8 @@ TicketRush의 기존 Claude Code 에이전트, 명령과 스킬을 추출해 다
 설정 예시는 [`examples/dev-cycle.config.json`](examples/dev-cycle.config.json)에 있습니다.
 
 [추출 파일 대응, 설정 계약과 설치 방법](docs/workflow-package.md)을 먼저 확인하세요.
-현재는 템플릿과 설정 검증, 기존 파일을 보존하는 `init` 설치와 Gradle 변경 모듈의
-`test` 실행 및 결과 기록을 제공합니다. 기록 기반 `report` CLI는 후속 이슈에서 구현합니다.
+현재는 템플릿과 설정 검증, 기존 파일을 보존하는 `init` 설치, Gradle 변경 모듈의
+`test` 실행 및 결과 기록, 그 기록으로 PR 검증 블록을 만드는 `report`를 제공합니다.
 
 ## init으로 설치
 
@@ -48,6 +48,37 @@ node /absolute/path/to/dev-cycle/dist/cli.js test /absolute/path/to/project
 이번 실행의 XML 증거와 실행 전후 코드 지문을 기록합니다. 캐시나 이전 결과를 새 테스트
 통과로 표시하지 않습니다. [지원 문법, Windows 인자 제한과 기록 계약](docs/test.md)을 확인하세요.
 
+## 실행 기록으로 보고서 만들기
+
+```sh
+node /absolute/path/to/dev-cycle/dist/cli.js report /absolute/path/to/project
+node /absolute/path/to/dev-cycle/dist/cli.js report /absolute/path/to/project --json
+node /absolute/path/to/dev-cycle/dist/cli.js report /absolute/path/to/project \
+  --output .dev-cycle/reports/pr-tests.md
+```
+
+`report`는 기본적으로 가장 최근에 시작한 실행 기록을 선택해 PR 본문에 붙일 Markdown을
+stdout으로 출력합니다. 최신 기록이 실패, 중단, 생략 또는 미실행이면 그 상태를 그대로
+표시하며 과거 성공 기록으로 대체하지 않습니다. 현재 코드나 설정이 실행 시점과 달라졌으면
+현재 코드를 검증하지 않은 결과라고 명시합니다. 기록에 없는 실패 테스트 이름, 커버리지,
+수동 시연이나 원격 CI 결과는 만들지 않습니다.
+
+파일 출력은 설정한 `artifactsDir` 아래 `reports/`에만 새 파일로 저장할 수 있으며 기존 파일을
+덮어쓰지 않습니다. `--dry-run`은 파일을 만들지 않습니다. 선택 규칙, 상태 해석과 출력 경계는
+[report 사용법](docs/report.md)을 확인하세요.
+
+설치부터 보고서까지의 기본 흐름은 다음과 같습니다.
+
+1. `init --dry-run`으로 설치 계획과 충돌을 확인합니다.
+2. `init`을 적용하고 다시 실행해 모든 파일이 `unchanged`인지 확인합니다.
+3. `test --dry-run`으로 선택 대상과 이유를 확인합니다.
+4. `test`를 실행해 실제 종료 상태와 증거를 기록합니다.
+5. `report`로 현재 코드와 기록을 비교한 Markdown을 만듭니다.
+
+테스트나 report가 실패하면 원인을 수정한 뒤 테스트를 새로 실행합니다. 과거 기록은
+덮어쓰지 않으며, 새 기록으로 report를 다시 생성합니다. 커밋, push, PR 게시와 머지는 CLI가
+수행하지 않고 대상 저장소의 지침과 사용자가 승인한 범위에 따라 별도로 진행합니다.
+
 ## 개발 환경
 
 - Node.js 22.x (22.17.0 이상), npm 10 이상, Git
@@ -76,7 +107,7 @@ npm run check
 | `npm run check` | lint → 타입 검사 → 테스트 → 빌드 순서로 전체 검증 |
 
 현재 테스트는 실제 `commit-msg` 훅과 배포 템플릿, 설정 검사와 프로젝트별 렌더링을
-비롯해 init 설치 계획, 충돌과 재실행, Git 변경 분석, 테스트 실행과 결과 기록을 확인합니다. 테스트 실행 전에 이전
+비롯해 init 설치 계획, 충돌과 재실행, Git 변경 분석, 테스트 실행과 결과 기록, 기록 기반 report를 확인합니다. 테스트 실행 전에 이전
 `.test-dist/` 산출물을 지웁니다.
 
 ## 작업 규칙과 CI

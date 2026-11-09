@@ -18,7 +18,7 @@ export interface TestOptions {
   signal?: AbortSignal;
 }
 
-/** Version 1 is also the persisted run contract consumed by the future report command. */
+/** Version 1 is also the persisted run contract consumed by the report command. */
 export interface TestResult {
   schemaVersion: 1;
   command: 'test';
@@ -52,7 +52,7 @@ function readConfig(path: string) {
   return parseWorkflowConfig(JSON.parse(fs.readFileSync(path, 'utf8').replace(/^\uFEFF/u, '')) as unknown);
 }
 
-function currentModules(root: string): string[] {
+export function currentModules(root: string): string[] {
   if (fs.existsSync(join(root, 'settings.gradle.kts'))) throw new Error('settings.gradle.kts는 지원하지 않습니다. 정적 Groovy settings.gradle이 필요합니다.');
   const path = join(root, 'settings.gradle');
   if (!fs.lstatSync(path).isFile()) throw new Error('settings.gradle은 링크가 아닌 일반 파일이어야 합니다.');
@@ -251,21 +251,28 @@ function validateRunRecord(run: TestResult, path: string): void {
     const counts = run.evidence.counts;
     if (counts !== null && (!object(counts) || ![counts.tests, counts.failures, counts.errors, counts.skipped].every((value) => Number.isSafeInteger(value) && value >= 0)
       || counts.failures + counts.errors + counts.skipped > counts.tests)) invalid();
-    if (counts && counts.failures + counts.errors > 0 && !run.evidence.hasFailures) invalid();
+    const fresh = run.evidence.files.some((file) => file.state === 'fresh');
+    if (!execution || !run.invocation || !run.selection || run.selection.mode === 'skip') invalid();
+    if ((fresh || counts !== null || run.evidence.hasFailures) && !execution!.started) invalid();
+    if ((counts !== null || run.evidence.hasFailures) && !fresh) invalid();
+    if (counts && (counts.failures + counts.errors > 0) !== run.evidence.hasFailures) invalid();
   }
   if (unfinished && (run.analysis !== 'complete' || run.exitCode !== 0 || !run.comparison || !run.selection || !run.before
     || run.after !== null || run.codeState !== 'unknown' || execution !== null || run.evidence !== null)) invalid();
   if (run.status === 'running' && (!unfinished || !run.invocation || run.selection?.mode === 'skip')) invalid();
   if (run.codeState === 'unchanged' && (!run.before || !run.after || run.before.digest !== run.after.digest)) invalid();
   if (run.status === 'succeeded' && (run.exitCode !== 0 || !execution?.started || execution.exitCode !== 0 || execution.signal !== null
-    || execution.error !== null || execution.interrupted || !run.before || !run.after || run.codeState === 'unknown'
+    || execution.error !== null || execution.cleanupError !== null || execution.interrupted || !run.before || !run.after || run.codeState === 'unknown'
     || run.analysis !== 'complete' || !run.comparison || !run.selection || run.selection.mode === 'skip'
     || !run.invocation || !run.evidence || run.evidence.hasFailures)) invalid();
   if (run.status === 'skipped' && (run.exitCode !== 0 || run.analysis !== 'complete' || !run.comparison || !run.before || (!unfinished && !run.after)
     || execution !== null || run.invocation !== null || run.evidence !== null || run.selection?.mode !== 'skip')) invalid();
-  if (run.status === 'interrupted' && run.exitCode !== 130) invalid();
-  if (run.status === 'not-run' && (run.exitCode !== 2 || execution?.started)) invalid();
+  if (run.status === 'interrupted' && (run.exitCode !== 130 || !execution || (!execution.interrupted && execution.signal === null))) invalid();
+  if (run.status === 'not-run' && (run.exitCode !== 2 || execution?.started || run.errors.length === 0)) invalid();
   if (run.status === 'failed' && run.exitCode !== 1 && run.exitCode !== 2) invalid();
+  if (run.status === 'failed' && run.exitCode === 1 && (!execution?.started || execution.interrupted || execution.signal !== null
+    || execution.error !== null || ((execution.exitCode === null || execution.exitCode === 0) && !run.evidence?.hasFailures))) invalid();
+  if (run.status === 'failed' && run.exitCode === 2 && run.errors.length === 0) invalid();
 }
 
 export function checkTestRunFreshness(result: TestResult): { status: 'current' | 'changed' | 'unknown' | 'incomplete'; reason: string } {
