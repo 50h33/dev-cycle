@@ -24,6 +24,11 @@ node /path/to/dev-cycle/dist/cli.js test /path/to/project --base-ref origin/trun
 확인하다가 ref 오류가 나거나 저장소에 커밋이 없으면 중단합니다. 자동 fetch, 브랜치 추정,
 Git 설정 변경은 하지 않습니다.
 
+PR에 포함된 변경을 검사하려면 PR base 브랜치를 비교 ref로 사용하세요. `HEAD`를 지정하면
+현재 커밋 이후의 미커밋 변경만 비교하므로, 커밋 후 작업 트리가 깨끗하면 테스트를 생략합니다.
+테스트 이후 `git add`나 커밋을 하면 index나 HEAD가 바뀌어 이전 기록은 `changed`가 될 수
+있습니다. 최종 커밋의 검증 결과가 필요하면 커밋 후 테스트와 report를 다시 실행하세요.
+
 `--dry-run`은 선택 결과와 실행할 명령만 반환합니다. Wrapper를 실행하지 않고 로그, 기록,
 캐시도 만들지 않습니다. 정상 preview의 상태는 `not-run`이고 종료 코드는 0입니다. JSON
 형식에서는 stdout에 객체 하나만 출력합니다. 실제 실행의 원문 stdout/stderr는 크기를 제한한

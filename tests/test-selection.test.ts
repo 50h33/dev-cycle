@@ -38,7 +38,7 @@ test('동적 또는 지원 밖 settings 문법과 안전하지 않은 모듈 이
   for (const [source, error] of cases) assert.throws(() => parseGradleSettings(source), error);
 });
 
-test('모듈 변경과 rename의 이전·새 경로를 모두 반영해 태스크를 선택한다', () => {
+test('모듈 변경과 rename 전후의 경로를 모두 반영해 태스크를 선택한다', () => {
   const selection = selectTests([
     { status: 'M', path: 'api/src/A.java' },
     { status: 'R', previousPath: 'worker/src/Old.java', path: 'api/src/New.java' },
