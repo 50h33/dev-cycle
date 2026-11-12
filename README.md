@@ -1,133 +1,263 @@
 # dev-cycle
-AI 개발 흐름과 테스트를 관리하는 TypeScript CLI
 
-## 워크플로 템플릿
+dev-cycle은 Claude Code용 개발 워크플로 템플릿을 제공합니다. 함께 제공하는 CLI로 테스트를
+실행하고 결과를 기록할 수 있습니다.
+이슈 작성부터 조사, 계획, 구현, 테스트, 코드 리뷰, PR 작성과 리뷰 반영까지 이어지는 작업
+절차를 설정합니다. 세션을 다시 시작할 때의 작업 확인과 마무리 요약, 문서와 설정 점검도 포함합니다.
 
-TicketRush의 기존 Claude Code 에이전트, 명령과 스킬을 추출해 다른 저장소에서도
-사용할 수 있도록 프로젝트별 설정을 분리합니다. 배포 파일은 `templates/workflow/`,
-설정 예시는 [`examples/dev-cycle.config.json`](examples/dev-cycle.config.json)에 있습니다.
+조사, 계획, 구현, 리뷰 판단은 Claude Code가 맡고, TypeScript CLI는 템플릿 설치, Gradle 테스트
+실행과 결과 기록을 맡습니다. 프로젝트의 브랜치 규칙, 개발 명령, 이슈와 PR 양식은
+`dev-cycle.config.json`에 지정한 저장소 설정과 지침을 따릅니다.
 
-[추출 파일 대응, 설정 계약과 설치 방법](docs/workflow-package.md)을 먼저 확인하세요.
-현재는 템플릿과 설정 검증, 기존 파일을 보존하는 `init` 설치, Gradle 변경 모듈의
-`test` 실행 및 결과 기록, 그 기록으로 PR 검증 블록을 만드는 `report`를 제공합니다.
+## 전체 개발 흐름
 
-## init으로 설치
+| 단계 | 하는 일 | 확인할 결과 |
+| --- | --- | --- |
+| 1. 이슈 작성 | `/issue`로 요구사항이나 완료한 작업을 저장소 양식에 맞춰 정리합니다. 기존 이슈가 있으면 재사용합니다. | 작업 범위, 완료 조건, 이슈 초안 또는 게시한 이슈 |
+| 2. 조사 | `researcher`가 관련 코드와 필요한 외부 자료를 확인합니다. | 파일과 출처에 근거한 사실, 추정, 추가 확인 사항 |
+| 3. 계획 | `planner`가 변경 파일, 구현 순서, 위험과 검증 방법을 작성합니다. | 실행할 계획과 사람이 결정해야 할 사항 |
+| 4. 구현 | Claude Code가 기존 작업 트리를 보존하고 저장소 규칙에 맞는 작업 브랜치에서 코드와 테스트를 작성합니다. | 요청한 범위의 변경 |
+| 5. 테스트 | `/test`로 테스트 선택 이유를 확인하고 CLI를 통해 실제 테스트를 실행합니다. | 성공, 실패, 중단, 생략, 미실행 구분과 실행 기록 |
+| 6. 코드 리뷰 | `reviewer`가 기준 ref와 현재 변경을 독립적으로 검토합니다. Claude Code가 타당한 지적을 반영하고 다시 검증합니다. | 문제의 심각도, 위치, 수정 결과와 남은 판단 |
+| 7. 결과 정리 | CLI `report`로 테스트 결과와 테스트 이후 코드 변경 여부를 확인합니다. | PR 본문에 사용할 Markdown 검증 블록 |
+| 8. 커밋과 PR | 요청된 커밋을 마친 뒤 `/test`와 `report`로 최종 상태를 확인하고, push와 `/pr`을 진행합니다. | 최종 커밋의 검증 결과와 PR 초안 또는 게시한 PR |
+| 9. PR 리뷰 대응 | `/apply-review`로 미해결 코멘트를 수용, 거절, 보류로 분류하고, 수용한 지적을 반영해 재검증합니다. | 코멘트별 처리 결과, 요청된 답글과 resolve |
+| 10. 세션 마무리 | `/wrap-up`으로 완료한 일, 결정, 검증 결과와 다음 작업을 정리합니다. | 다음 세션에서도 참고할 수 있는 작업 요약 |
 
-먼저 dev-cycle 저장소에서 의존성을 설치하고 CLI를 빌드합니다.
+`/dev-cycle <이슈 번호>`는 **이미 있는 이슈**의 조사부터 계획, 구현, 테스트, 리뷰, 보고서
+초안까지 연결합니다. 이슈가 없다면 `/issue`로 먼저 준비하세요. 각 단계의 명령이나 에이전트를
+따로 사용해 필요한 작업만 진행할 수도 있습니다.
+
+한 번의 `/dev-cycle`은 지정한 이슈를 작업 단위로 삼습니다. 브랜치 이름과 커밋 메시지 형식은
+`paths.conventions`가 가리키는 저장소 지침을 따릅니다. 커밋을 요청하면 메인 대화에서 작업
+범위에 맞는 변경을 확인하고 커밋합니다. 리뷰 반영으로 코드가 바뀌었다면 먼저 다시 검증합니다.
+
+실행 기록은 파일 내용뿐 아니라 HEAD와 index도 비교합니다. 따라서 테스트 후 `git add`나
+커밋을 하면 파일 내용이 같아도 이전 기록은 `changed`가 될 수 있습니다. PR에 최종 커밋의
+검증 결과를 넣으려면 커밋 후 `/test`와 `report`를 다시 실행하세요. 다시 검증하지 못했다면
+현재 코드가 미검증이라는 표시를 유지합니다. 이때 비교 ref는 PR의 base 브랜치로 지정합니다.
+`HEAD`를 기준으로 삼으면 커밋한 변경은 비교 대상에서 빠져 테스트가 생략될 수 있습니다.
+
+구현 전에 계획을 공유하고, 범위 확대나 새 설계 결정처럼 판단이 필요한 부분을 확인합니다.
+이미 요청받은 구현과 명백한 오류 수정은 반복 승인 없이 이어갑니다. 커밋, push, PR 게시, 리뷰
+답글, 머지는 사용자가 요청한 범위에서 수행하며, `/dev-cycle` 호출만으로 모두 실행하지는 않습니다.
+
+실패한 테스트는 원인을 수정한 뒤 새로 실행합니다. 리뷰를 반영해 코드가 달라져도 다시
+검증해야 합니다. PR의 CI가 실패하면 해당 실행의 실패 단계와 로그를 확인해 원인을 수정한 뒤 재검증합니다.
+로컬 테스트 결과와 CI 결과는 구분해 기록합니다.
+
+## 역할별 에이전트
+
+에이전트는 조사, 계획, 검토를 별도 작업으로 맡길 때 사용합니다. Claude Code에 역할 이름과
+대상을 함께 요청하세요. 구현과 수정은 메인 대화에서 진행하고, 네 에이전트는 조사나 검토
+결과를 보고합니다.
+
+| 에이전트 | 맡는 일 | 요청 예시 |
+| --- | --- | --- |
+| `researcher` | 현재 구현과 외부 자료를 조사하고 사실과 추정을 구분합니다. | `researcher로 이 이슈와 관련된 코드와 테스트를 조사해 줘.` |
+| `planner` | 변경 파일과 단계, 위험, 롤백과 검증 방법을 계획합니다. | `planner로 조사 결과를 바탕으로 구현 계획을 세워 줘.` |
+| `reviewer` | 버그, 설계, 오류 처리, 보안, 성능, 테스트와 저장소 규칙을 검토합니다. | `reviewer로 현재 브랜치의 변경을 검토해 줘.` |
+| `gardener` | 문서와 설정의 불일치, 안 쓰는 구성, 깨진 링크, 과도한 권한과 개인 파일 추적 여부를 점검합니다. | `gardener로 Claude Code 설정과 문서를 점검해 줘.` |
+
+`reviewer`는 지적을 Must(완료 전에 해결할 문제), Should(반영을 권하는 개선),
+Nit(표현이나 가독성 수준의 가벼운 제안)으로 나누고 파일 위치와 개선 방향을 설명합니다. 문제를
+찾지 못했더라도 검토한 범위와 확인하지 못한 부분을 남깁니다. `gardener`는 코드 변경의 버그보다
+개발 환경과 안내 문서가 서로 맞는지를 살펴보므로, 설정이나 문서를 바꾼 뒤 함께 사용하세요.
+
+한 에이전트에 조사, 계획, 구현, 검토를 모두 맡기지 않고 역할을 나눕니다. 조사와 검토 결과를
+메인 대화에서 받아 구현에 반영하면, 구현 과정의 가정과 별도로 변경을 살펴볼 수 있습니다.
+역할을 추가할 때도 기존 역할과 책임이 충돌하거나 필요한 도구 권한을 따로 둘 필요가 있는지
+먼저 확인합니다.
+
+## 명령과 스킬
+
+명령과 스킬은 정해진 작업 절차를 호출합니다. 아래 `/...` 입력은 터미널이 아닌 **대상
+저장소에서 연 Claude Code 대화**에 입력합니다. 스킬은 작업에 맞는 자연어 요청으로도 사용할
+수 있으며, 직접 지정하려면 아래 이름을 쓰면 됩니다.
+
+| 이름 | 종류 | 언제 사용하는가 |
+| --- | --- | --- |
+| `/dev-cycle <이슈 번호>` | 명령 | 기존 이슈를 조사부터 구현, 검증, 리뷰까지 진행할 때 |
+| `/test` | 명령 | 변경에 맞는 테스트를 실행하고 실제 결과를 확인할 때 |
+| `/review-pr <PR 번호 또는 URL>` | 명령 | 올라온 PR을 검토하고 리뷰 코멘트를 제안할 때 |
+| `/resume` | 명령 | 새 세션에서 작업 메모를 Git 및 이슈 상태와 대조할 때 |
+| `/wrap-up` | 명령 | 현재 세션에서 확인된 작업과 다음 할 일을 요약할 때 |
+| `/issue` | 스킬 | 새 요구사항이나 완료한 작업을 이슈로 정리할 때 |
+| `/pr` | 스킬 | 커밋, diff, 실제 테스트 결과로 PR을 작성할 때 |
+| `/apply-review` | 스킬 | 내 PR에 달린 미해결 리뷰 코멘트를 처리할 때 |
+
+`reviewer`는 현재 작업의 코드 리뷰에, `/review-pr`은 **원격 PR에 남길 리뷰 제안**에 사용합니다.
+`/review-pr`은 PR head의 실제 파일과 코멘트 위치를 대조하고, 사용자가 게시할 항목을 지정한
+경우 그 범위만 게시합니다. 직접 코드를 수정하지 않습니다.
+
+`/apply-review`는 반대로 받은 코멘트를 처리합니다. 현재 브랜치와 PR head가 맞는지 확인하고,
+해결된 스레드는 제외합니다. 수용한 내용은 현재 코드에 맞춰 수정하고 검증하며, 거절하거나 보류한
+내용에는 이유를 남깁니다. push, 답글과 resolve는 요청한 범위에서만 수행합니다.
+
+`/issue`와 `/pr`은 설정한 저장소의 양식을 읽습니다. 이슈는 예정된 작업과 이미 끝난 작업을
+구분하며, PR에는 실제 변경과 검증 결과만 적습니다. 게시 요청이 있으면 저장소와 브랜치를
+확인해 게시하고 결과를 다시 조회합니다. 초안 작성만 요청했다면 초안까지 작성합니다.
+
+## 작업 재개와 마무리
+
+`/resume`은 현재 브랜치, 변경 파일, 최근 커밋과 이슈 상태를 확인합니다. 작업 메모가 있으면
+함께 읽고, 진행 중(`doing`)인 항목을 우선해 다음 작업 하나를 제안합니다. 메모가 없다고
+새 파일을 만들거나 구현을 시작하지는 않습니다. 계속할 작업은 `/dev-cycle`로 이어갑니다.
+
+소스에서 빌드한 CLI의 경로는 `init`, `/resume`, `/wrap-up`이 별도로 저장하지 않습니다.
+새 Claude Code 세션에서도 `node /path/to/dev-cycle/dist/cli.js`로 실행할 실제 경로를 알려주세요.
+
+개인 작업 메모가 필요하면 설치된 `.claude/claude-progress.txt.example`과
+`.claude/feature_list.json.example`을 참고하세요. 현재 작업, 직전에 끝낸 일, 다음 작업, 막힌 점과
+작업별 `todo`/`doing`/`done` 상태를 기록할 수 있습니다. 실제 메모 파일은 Git에서 제외하며,
+메모에 적힌 내용과 실제 Git 및 이슈 상태가 다르면 실제 상태를 우선합니다.
+
+`/wrap-up`은 대화, Git 상태와 실행 기록을 바탕으로 한 일, 주요 결정, 변경과 커밋, 검증 결과,
+다음 작업을 요약합니다. 사용자가 요약에서 필요한 내용을 메모에 옮겨 다음 세션에서 참고할 수 있습니다.
+요약 명령이 메모를 자동 저장하거나 작업 상태를 동기화하는 것은 아닙니다.
+
+## 설정과 권한
+
+설치되는 `CLAUDE.md`는 Git 루트의 `dev-cycle.config.json`과 프로젝트 지침을 읽도록
+안내합니다. 공유 `.claude/settings.json`의 기본 권한 모드는 `plan`입니다. 개인 권한은
+`.claude/settings.local.json`에서 별도로 관리하며, 설치 과정에서 권한을 추가하지 않습니다.
+작업 범위를 이미 요청했다는 사실과 도구 실행 권한은 별개입니다. plan 모드에서 시작했다면
+실제 수정이나 테스트 실행에 앞서 해당 작업을 허용하는 권한 모드로 전환해야 합니다.
+
+네 에이전트에는 조회 도구가 지정돼 있고, 외부 자료를 읽는 `WebSearch`와 `WebFetch`는
+`researcher`의 도구 목록에 있습니다. 다만 Bash를 가진 에이전트의 “조회만 한다”는 지침이
+파일 쓰기를 기술적으로 차단하지는 않습니다. 실제 제한은 실행 환경의 권한과 샌드박스를
+따릅니다. 개인 권한의 넓은 허용 규칙과 남은 임시 설정도 `gardener`의 점검 대상입니다.
+
+전체 파일 목록과 상세 절차는 [Claude Code 워크플로 가이드](docs/workflow-package.md)에
+있습니다. 설치 후에는 대상 저장소의 `docs/dev-cycle-workflow.md`에서도 확인할 수 있습니다.
+
+## CLI 명령
+
+| 명령 | 하는 일 | 자세한 사용법 |
+| --- | --- | --- |
+| `init` | 대상 저장소에 Claude Code용 파일과 설정을 설치합니다. 기존 파일과 충돌하면 덮어쓰지 않고 중단합니다. | [설치와 충돌 처리](docs/init.md) |
+| `test` | Git 변경을 읽어 Gradle 테스트를 선택하고 실행합니다. 결과와 테스트 당시 코드 상태를 함께 기록합니다. | [테스트 실행](docs/test.md) |
+| `report` | 최근 테스트 결과를 Markdown으로 정리합니다. 테스트 후 코드가 바뀌었는지도 표시합니다. | [보고서 만들기](docs/report.md) |
+
+`/test`는 Claude Code에 테스트 절차를 요청하는 명령이고, `dev-cycle test`는 실제 테스트를
+실행하는 CLI 명령입니다. CLI의 `test`와 `report`는 Claude Code 없이도 사용할 수 있습니다.
+
+## 지원 환경
+
+- Node.js 22.17.0 이상 22 계열, npm 10 이상, Git
+- Windows 또는 Ubuntu
+- AI 워크플로를 사용할 Claude Code와 GitHub 작업에 필요한 인증과 권한
+
+CLI의 테스트 선택과 실행 기능은 다음 Gradle 구성을 지원합니다.
+
+- 테스트할 프로젝트의 JDK와 루트 Gradle Wrapper(`gradlew`, Windows에서는 `gradlew.bat`)
+- Groovy `settings.gradle`에 `include 'app'`처럼 이름을 직접 적은 최상위 모듈
+- 표준 `test` 태스크와 기본 XML 결과 경로(`build/test-results/test/*.xml`)
+
+Kotlin DSL, 동적 모듈 설정, 중첩 모듈, composite build, 사용자 정의 테스트 태스크와 다른 빌드
+시스템은 CLI 테스트 기능의 지원 범위 밖입니다. 자세한 조건은
+[지원하는 프로젝트](docs/test.md#지원하는-프로젝트)에 있습니다.
+
+## 시작하기
+
+이 저장소를 clone한 디렉터리에서 의존성을 설치하고 CLI를 빌드하세요.
 
 ```sh
 npm ci
 npm run build
 ```
 
-대상 저장소에 맞춘 설정 파일을 준비한 뒤, 실제 변경 전에 dry-run으로 전체 계획을 확인합니다.
+[`설정 파일 예시`](examples/dev-cycle.config.json)를 복사해 테스트할 저장소에 맞게 수정하세요.
+저장소명, 기본 브랜치, 비교 ref, 문서 경로와 테스트 명령을 직접 지정해야 합니다.
+
+아래 경로를 실제 위치로 바꾼 뒤 실행하세요. 경로에 공백이 있으면 따옴표로 감싸야 합니다.
 
 ```sh
-node /absolute/path/to/dev-cycle/dist/cli.js init /absolute/path/to/project \
-  --config /absolute/path/to/project-config.json \
-  --dry-run
+node /path/to/dev-cycle/dist/cli.js init /path/to/project --config /path/to/project-config.json --dry-run
+node /path/to/dev-cycle/dist/cli.js init /path/to/project --config /path/to/project-config.json
 ```
 
-충돌과 오류가 없으면 `--dry-run`만 제거해 설치합니다. 대상 Git 루트에 이미
-`dev-cycle.config.json`이 있으면 `--config`를 생략할 수 있습니다. 설정 파일 경로는
-명령을 실행한 디렉터리를 기준으로 해석하며 저장소명, 기본 브랜치나 명령을 추정하지 않습니다.
-자동화에서는 `--json`을 추가해 같은 계획과 오류를 JSON 한 개로 받습니다.
+첫 번째 명령은 설치할 파일을 미리 보여줍니다. 결과가 `ready`이면 두 번째 명령으로 설치할 수
+있습니다. `blocked`가 나오면 [충돌 처리](docs/init.md#계획과-충돌)를 먼저 확인하세요.
+설치 후에는 대상 저장소의 `dev-cycle.config.json`을 자동으로 읽습니다.
 
-기존 파일과 내용이 다르면 덮어쓰거나 자동 병합하지 않고 전체 설치를 중단합니다.
-상세한 충돌 처리, 종료 코드와 실패 복구 방법은 [init 사용법](docs/init.md)을 확인하세요.
+대상 Git 루트에서 Claude Code를 열고 `/agents`로 네 역할을 확인하세요. 빌드한 CLI의 실제
+경로도 알려줘야 합니다. `init`은 PATH에 `dev-cycle` 명령을 등록하지 않습니다.
 
-## 변경 모듈 테스트
+```text
+dev-cycle CLI는 /path/to/dev-cycle/dist/cli.js야. node로 실행해 줘.
+/dev-cycle 123
+```
+
+`123`은 작업할 기존 이슈 번호로 바꾸세요. 이슈가 없다면 먼저 `/issue`로 작업을 정리하고,
+이전 세션에서 하던 작업이라면 `/resume`으로 상태부터 확인할 수 있습니다.
+설치부터 PR 작성과 리뷰 반영까지는 [시작 가이드](docs/quickstart.md)를 참고하세요.
+
+터미널에서 테스트와 보고서만 직접 실행할 수도 있습니다.
 
 ```sh
-node /absolute/path/to/dev-cycle/dist/cli.js test /absolute/path/to/project --dry-run --json
-node /absolute/path/to/dev-cycle/dist/cli.js test /absolute/path/to/project
+node /path/to/dev-cycle/dist/cli.js test /path/to/project --dry-run --json
+node /path/to/dev-cycle/dist/cli.js test /path/to/project
+node /path/to/dev-cycle/dist/cli.js report /path/to/project
 ```
 
-정적 Groovy `settings.gradle`의 최상위 모듈과 Gradle Wrapper를 지원합니다. 비교 ref와
-프로젝트별 공통 모듈은 설정하며, 미분류 변경은 전체 테스트로 확대합니다. 실제 종료 상태,
-이번 실행의 XML 증거와 실행 전후 코드 지문을 기록합니다. 캐시나 이전 결과를 새 테스트
-통과로 표시하지 않습니다. [지원 문법, Windows 인자 제한과 기록 계약](docs/test.md)을 확인하세요.
+`test --dry-run`은 실행할 테스트와 선택 이유만 보여줍니다. 실제 테스트를 실행하려면
+`--dry-run`을 빼야 합니다. 테스트할 저장소에는 HEAD 커밋과 비교할 ref가 있어야 합니다.
 
-## 실행 기록으로 보고서 만들기
+## 테스트 결과 읽기
 
-```sh
-node /absolute/path/to/dev-cycle/dist/cli.js report /absolute/path/to/project
-node /absolute/path/to/dev-cycle/dist/cli.js report /absolute/path/to/project --json
-node /absolute/path/to/dev-cycle/dist/cli.js report /absolute/path/to/project \
-  --output .dev-cycle/reports/pr-tests.md
-```
+테스트 실행 결과는 기본적으로 `.dev-cycle/runs/`에 저장됩니다. `report`는 가장 최근에 시작한
+실행을 읽어 Markdown을 출력합니다. 최신 테스트가 실패했으면 실패 결과를 그대로 보여줍니다.
 
-`report`는 기본적으로 가장 최근에 시작한 실행 기록을 선택해 PR 본문에 붙일 Markdown을
-stdout으로 출력합니다. 최신 기록이 실패, 중단, 생략 또는 미실행이면 그 상태를 그대로
-표시하며 과거 성공 기록으로 대체하지 않습니다. 현재 코드나 설정이 실행 시점과 달라졌으면
-현재 코드를 검증하지 않은 결과라고 명시합니다. 기록에 없는 실패 테스트 이름, 커버리지,
-수동 시연이나 원격 CI 결과는 만들지 않습니다.
+테스트 성공 여부와 코드 변경 여부는 별개입니다. `freshness`는 테스트 당시 코드와 현재 코드가
+같은지 나타내며, CLI 출력에서는 ‘코드 신선도’로 표시됩니다.
 
-파일 출력은 설정한 `artifactsDir` 아래 `reports/`에만 새 파일로 저장할 수 있으며 기존 파일을
-덮어쓰지 않습니다. `--dry-run`은 파일을 만들지 않습니다. 선택 규칙, 상태 해석과 출력 경계는
-[report 사용법](docs/report.md)을 확인하세요.
+| 표시 | 의미 |
+| --- | --- |
+| `succeeded` + `current` | Gradle 프로세스가 성공했고, 코드와 설정도 실행 당시와 같습니다. 새 테스트 실행 여부는 XML 결과를 확인하세요. |
+| `succeeded` + `changed` | Gradle 프로세스는 성공했지만, 실행 중이나 이후에 코드나 설정 등이 바뀌었습니다. 다시 테스트해야 합니다. |
+| `unknown` 또는 `incomplete` | 코드 상태를 비교할 수 없거나 실행이 끝난 기록이 없습니다. 현재 코드가 검증됐다고 볼 수 없습니다. |
 
-설치부터 보고서까지의 기본 흐름은 다음과 같습니다.
+프로세스가 성공했다고 테스트를 새로 실행한 것은 아닐 수 있습니다. Gradle의 `UP-TO-DATE`나
+`FROM-CACHE` 결과는 새 테스트 통과 수에 넣지 않습니다. 실제로 실행한 태스크의 새 XML 결과만
+집계합니다. `report`의 종료 코드 0도 테스트 통과가 아니라 보고서를 만들었다는 뜻입니다.
 
-1. `init --dry-run`으로 설치 계획과 충돌을 확인합니다.
-2. `init`을 적용하고 다시 실행해 모든 파일이 `unchanged`인지 확인합니다.
-3. `test --dry-run`으로 선택 대상과 이유를 확인합니다.
-4. `test`를 실행해 실제 종료 상태와 증거를 기록합니다.
-5. `report`로 현재 코드와 기록을 비교한 Markdown을 만듭니다.
+CLI는 로컬 테스트와 보고서 작성까지 수행합니다. 커밋, push, PR 게시와 머지는 별도 작업입니다.
 
-테스트나 report가 실패하면 원인을 수정한 뒤 테스트를 새로 실행합니다. 과거 기록은
-덮어쓰지 않으며, 새 기록으로 report를 다시 생성합니다. 커밋, push, PR 게시와 머지는 CLI가
-수행하지 않고 대상 저장소의 지침과 사용자가 승인한 범위에 따라 별도로 진행합니다.
+## 검증 현황
 
-## 개발 환경
+2026-11-12에 확인한 `main` 커밋
+[`431cbb5`](https://github.com/50h33/dev-cycle/commit/431cbb5d5ccd14509939e91d1cea3e39b2305039)의
+[GitHub Actions 결과](https://github.com/50h33/dev-cycle/actions/runs/42656519909)입니다.
+두 OS 모두 의존성 설치, lint, 타입 검사, 테스트, 빌드를 통과했습니다.
 
-- Node.js 22.x (22.17.0 이상), npm 10 이상, Git
-- `.nvmrc`는 Node.js 22 계열을 지정합니다. CI도 같은 계열을 사용합니다.
-- GitHub 이슈·PR 작업 스킬을 사용할 때는 GitHub CLI(`gh`)와 저장소 접근 권한이 필요합니다.
+| 환경 | Node.js | 전체 | 통과 | 실패 | 생략 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| [Windows](https://github.com/50h33/dev-cycle/actions/runs/42656519909/job/129296333680) | 22.23.4 | 162 | 159 | 0 | 3 |
+| [Ubuntu](https://github.com/50h33/dev-cycle/actions/runs/42656519909/job/129296333584) | 22.23.4 | 162 | 158 | 0 | 4 |
 
-저장소 루트에서 실행합니다.
+Windows에서는 POSIX 전용 검사 3개, Ubuntu에서는 Windows 전용 검사 4개를 생략했습니다.
+CI는 임시 Git 저장소와 Gradle 대신 실행하는 Node stub으로 CLI 동작을 검사합니다.
 
-```sh
-npm ci
-npm run check
-```
+실제 Gradle 실행은 Windows / Java 21.0.6 / Gradle 9.3.0에서 확인했습니다.
+[검증 기록](docs/report.md#실제-환경-검증-기록)에 성공, 실패, 중단과 테스트 후 코드 변경 결과가 있습니다.
+실제 Ubuntu Gradle 실행과 외부 서비스가 필요한 통합 테스트는 확인하지 않았습니다.
+Claude Code 템플릿의 구조와 렌더링은 검사했지만, 실제 에이전트와 모델 실행은 확인하지 않았습니다.
 
-`npm ci`는 lockfile에 고정된 개발 의존성을 설치하고 `prepare` 단계에서
-이 저장소의 `core.hooksPath`를 `.githooks`로 설정합니다. 기존 사용자 전역 Git 설정은 변경하지 않습니다.
-`--ignore-scripts`로 설치했다면 `npm run prepare`를 별도로 실행해야 합니다.
+## 개발 및 기여
 
-## 검증 명령
+저장소 루트에서 `npm run check`로 전체 검사를 실행할 수 있습니다.
 
 | 명령 | 수행 내용 |
 | --- | --- |
-| `npm run lint` | TypeScript와 개발 스크립트의 ESLint 검사 |
-| `npm run typecheck` | 소스와 테스트의 strict 타입 검사, 파일 출력 없음 |
-| `npm test` | TypeScript 테스트를 `.test-dist/`로 컴파일하고 Node 내장 테스트 러너로 실행 |
-| `npm run build` | 이전 `dist/`를 비우고 `src/`를 컴파일 |
-| `npm run check` | lint → 타입 검사 → 테스트 → 빌드 순서로 전체 검증 |
+| `npm run lint` | ESLint 검사 |
+| `npm run typecheck` | 소스와 테스트의 strict 타입 검사 |
+| `npm test` | Node 내장 테스트 러너로 테스트 실행 |
+| `npm run build` | CLI 컴파일 |
+| `npm run check` | lint → 타입 검사 → 테스트 → 빌드 |
 
-현재 테스트는 실제 `commit-msg` 훅과 배포 템플릿, 설정 검사와 프로젝트별 렌더링을
-비롯해 init 설치 계획, 충돌과 재실행, Git 변경 분석, 테스트 실행과 결과 기록, 기록 기반 report를 확인합니다. 테스트 실행 전에 이전
-`.test-dist/` 산출물을 지웁니다.
-
-## 작업 규칙과 CI
-
-- 공통 작업 규칙: [AGENTS.md](AGENTS.md), Claude 진입점: [CLAUDE.md](CLAUDE.md)
-- 작업 브랜치: `main` 기준 `{이슈 라벨}/{이슈 번호}` (예: `chore/1`)
-- 커밋 메시지: `[Chore] #1 TypeScript 개발 환경 구성`
-- PR 제목: 같은 형식을 사용하며 여러 이슈 번호도 허용합니다. 예: `[Chore] #1, #2 개발 환경 보완`
-- 이슈·PR 양식과 이슈 작성·PR 작성·리뷰 반영 스킬은 `AGENTS.md`에서 안내합니다.
-
-코드 검증 CI는 `main`으로 향하는 PR, `main` push 또는 수동 실행 시 Windows와 Ubuntu에서
-설치·lint·타입 검사·테스트·빌드를 실행합니다. PR 제목 검사는 PR 생성·제목 편집·재개·커밋 추가 시 실행됩니다.
-로컬 검증 결과와 GitHub Actions 실행 결과는 구분하여 기록합니다.
-
-## 초기 검증 결과
-
-2026-11-09, Windows / Node.js 22.17.0 / npm 10.9.2 기준:
-
-- 설치, lint, 타입 검사, 커밋 훅 테스트 23개, 빌드 통과.
-- PR 제목 검사 22개 사례와 YAML·문서 링크 검사 통과.
-- `npm audit`: 개발 의존성의 `minimatch` 관련 moderate 경고 10건.
-  현재 호환 범위 내 수정 버전이 없으며, `npm audit --omit=dev` 결과는 0건입니다.
-- GitHub Actions와 Ubuntu 러너, 이슈·PR·리뷰 스킬의 실제 게시 동작은 미검증입니다.
+`npm ci`는 `prepare` 단계에서 이 저장소의 `core.hooksPath`를 `.githooks`로 설정합니다.
+`--ignore-scripts`로 설치했다면 `npm run prepare`를 따로 실행하세요.
+작업 규칙과 이슈 및 PR 양식은 [AGENTS.md](AGENTS.md), Claude Code용 안내는 [CLAUDE.md](CLAUDE.md)를
+참고하세요.

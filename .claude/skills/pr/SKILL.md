@@ -7,7 +7,7 @@ description: 현재 브랜치의 확인된 변경과 검증 결과로 PR 초안�
 
 [`.github/pull_request_template.md`](../../../.github/pull_request_template.md)를 사용해 현재 작업 브랜치의 PR을 작성합니다.
 
-공통 브랜치·GitHub 표기·외부 작업 규칙은 [`AGENTS.md`](../../../AGENTS.md)를 따릅니다.
+브랜치 규칙, GitHub 표기와 외부 작업 규칙은 [`AGENTS.md`](../../../AGENTS.md)를 따릅니다.
 
 ## 규칙
 
@@ -30,11 +30,11 @@ description: 현재 브랜치의 확인된 변경과 검증 결과로 PR 초안�
 gh pr create --base main --title "[Type] #123 요약" --body-file <file> --assignee @me
 ```
 
-라벨이나 명시된 리뷰어가 있으면 확인 후 해당 옵션을 추가합니다. PR 게시가 요청되지 않았다면 제목·본문 초안과 현재 상태까지만 보고합니다.
+라벨이나 명시된 리뷰어가 있으면 확인 후 해당 옵션을 추가합니다. PR 게시가 요청되지 않았다면 PR 제목과 본문 초안을 작성하고 현재 상태를 보고합니다.
 
 ## 결과 보고
 
 - 제목, base, 라벨, 리뷰어, 담당자
 - PR 본문 또는 생성된 PR URL
 - 실행한 검증과 결과
-- 미커밋·미푸시 변경 등 게시 전 남은 상태
+- 아직 커밋하거나 push하지 않은 변경 등 게시 전 남은 상태

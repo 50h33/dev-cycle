@@ -4,7 +4,7 @@ set -eu
 commit_msg_file="$1"
 first_line="$(head -n 1 "$commit_msg_file" | tr -d '\r')"
 
-# Git이 만드는 병합·되돌리기 및 autosquash 커밋은 허용한다.
+# Git이 만드는 병합, 되돌리기 및 autosquash 커밋은 허용한다.
 case "$first_line" in
   Merge\ *|Revert\ *|fixup!\ *|squash!\ *)
     exit 0
