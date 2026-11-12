@@ -1,8 +1,9 @@
-# Claude Code 템플릿
+# Claude Code 워크플로 가이드
 
-dev-cycle은 Claude Code용 에이전트, 명령, 스킬, 설정 파일을 `templates/workflow/`에서
-관리합니다. `init`은 manifest에 등록된 파일만 대상 Git 저장소에 설치합니다. 이 저장소 자체를
-운영하는 `.claude/` 파일은 배포 대상과 구분합니다.
+dev-cycle의 에이전트, 명령과 스킬은 이슈 작성부터 조사, 계획, 구현, 테스트, 리뷰와 PR 작업을
+이어줍니다. 이 문서에서는 각 구성의 역할과 설치·설정 방법을 설명합니다.
+배포할 파일은 `templates/workflow/`에서 관리하며, `init`은 manifest에 등록된 파일만 대상 Git
+저장소에 설치합니다. 이 저장소 자체를 운영하는 `.claude/` 파일은 배포 대상과 구분합니다.
 
 ## 설치 파일
 
@@ -28,8 +29,107 @@ dev-cycle은 Claude Code용 에이전트, 명령, 스킬, 설정 파일을 `temp
 | `docs/dev-cycle-workflow.md` | 역할, 승인, 실패 대응, 권한 제한을 설명합니다. |
 
 이 파일과 함께 대상 저장소용 `CLAUDE.md`, 실제 사용할 `dev-cycle.config.json`, Git 제외 패턴도 설치합니다. 개인 권한
-파일인 `settings.local.json`, 실제 작업 메모와 로그는 설치하지 않습니다. 자동 commit 명령과
-임의의 hook도 추가하지 않습니다.
+파일인 `settings.local.json`, 실제 작업 메모와 로그는 설치하지 않습니다.
+
+## Claude Code 작업 흐름
+
+설치된 워크플로는 이슈를 기준으로 조사, 계획, 구현, 테스트, 리뷰와 PR 준비를 이어갑니다.
+Claude Code가 코드와 문맥을 읽어 판단하는 단계와 dev-cycle CLI가 실제 명령을 실행하고 결과를
+기록하는 단계를 나눕니다.
+
+1. 이슈 작성이 필요하면 `issue` 스킬이 저장소 양식과 규칙을 읽어 초안을 만듭니다.
+2. `/dev-cycle <이슈 번호>`가 이슈와 저장소를 확인하고 researcher에게 조사를 맡깁니다.
+3. planner가 변경 파일, 작업 순서, 위험과 검증 방법을 정리합니다.
+4. 승인된 범위에서 구현하고 테스트 코드를 작성합니다. 이미 승인된 로컬 작업과 실패 수정은
+   반복해서 확인하지 않습니다.
+5. `/test`가 변경 범위에 맞는 Gradle 테스트를 선택해 실행하고 실제 결과를 기록합니다.
+6. reviewer가 기준 ref와 로컬 변경을 독립적으로 검토합니다. 타당한 지적을 수정한 뒤 다시
+   검증합니다.
+7. `report`가 최신 테스트 상태와 현재 코드가 같은지 확인해 PR 검증 블록을 만듭니다.
+8. PR 작성, 원격 PR 리뷰와 리뷰 반영은 각각 `pr`, `/review-pr`, `apply-review`로 진행합니다.
+9. `/wrap-up`으로 확인된 결과와 다음 작업을 정리하고, 다음 세션에서는 `/resume`으로 Git과
+   작업 메모를 대조합니다.
+
+범위 확대, 되돌리기 어려운 변경과 요청되지 않은 외부 게시처럼 새로운 결정이 필요한 작업은
+진행 전에 확인합니다. commit, push, PR 게시, 리뷰 답글과 스레드 resolve는 사용자가 요청한
+범위에서만 수행합니다.
+
+### 에이전트는 역할을 나눕니다
+
+에이전트는 각 단계의 판단을 분리합니다. 직접 선택해 한 단계만 맡길 수도 있고 `/dev-cycle`이
+작업 순서에 맞춰 호출하도록 할 수도 있습니다.
+
+- [researcher](../templates/workflow/.claude/agents/researcher.md)는 코드와 외부 자료를 조사하고
+  사실과 추정을 구분해 근거와 함께 보고합니다. 코드를 수정하거나 설계를 결정하지 않습니다.
+- [planner](../templates/workflow/.claude/agents/planner.md)는 변경 파일, 단계, 영향, 위험, 롤백과
+  검증 방법을 작성합니다. 아직 정하지 않은 설계와 범위 확대만 사람의 결정 사항으로 분리합니다.
+- [reviewer](../templates/workflow/.claude/agents/reviewer.md)는 구현 후 로컬 diff의 정확성, 설계,
+  오류 처리, 보안, 성능과 테스트 가능성을 검토합니다. 지적은 Must(완료 전에 해결할 문제),
+  Should(반영을 권하는 개선), Nit(표현·가독성 수준의 가벼운 제안)으로 분류합니다.
+- [gardener](../templates/workflow/.claude/agents/gardener.md)는 제품 코드 리뷰와 별도로 템플릿,
+  설정과 문서의 불일치, 깨진 링크, 미사용 항목, 과도한 권한과 추적되면 안 되는 개인 파일을
+  점검합니다.
+
+네 에이전트는 조사와 보고만 담당합니다. 본문의 읽기 전용 지침은 행동 규칙이며 기술적 쓰기
+차단은 Claude Code 권한, 운영체제 권한, 샌드박스나 차단 hook에서 설정해야 합니다.
+
+한 역할에는 한 책임을 맡기고 조사·계획·검토 결과를 메인 대화에서 구현에 반영합니다. 역할을
+추가할 때도 기존 책임과 충돌하는지, 필요한 도구 권한을 따로 제한해야 하는지 먼저 확인합니다.
+직접 호출 예시와 도구 목록은 [설치되는 가이드](../templates/workflow/docs/dev-cycle-workflow.md#역할별-에이전트)에 있습니다.
+
+작업은 `/dev-cycle`에 지정한 이슈를 기준으로 진행합니다. 브랜치와 커밋 형식은
+`paths.conventions`의 저장소 규칙을 따르며, 커밋·push는 메인 대화에서 요청된 범위에만 수행합니다.
+리뷰 반영 후 코드가 바뀌었다면 다시 검증한 뒤 커밋할 변경을 확인합니다.
+
+### 명령은 반복 절차를 실행합니다
+
+- [`/dev-cycle`](../templates/workflow/.claude/commands/dev-cycle.md)은 기존 이슈의 범위 확인부터
+  조사, 계획, 브랜치 준비, 구현, 테스트, 리뷰와 보고서 초안까지 연결합니다. 기본 브랜치에
+  직접 구현하지 않고 기존 작업 트리를 보존합니다.
+- [`/test`](../templates/workflow/.claude/commands/test.md)는 CLI의 dry-run으로 선택 태스크와
+  이유를 확인한 뒤 실제 테스트를 실행합니다. CLI가 없으면 설정된 argv를 유지해 직접 실행할
+  수 있지만 CLI 실행 기록이나 코드 지문이 있다고 표시하지 않습니다.
+- [`/review-pr`](../templates/workflow/.claude/commands/review-pr.md)은 원격 PR의 현재 head와
+  실제 파일 위치를 확인해 리뷰 코멘트를 제안합니다. reviewer가 로컬 작업 트리를 검토하는
+  것과 대상이 다르며, 요청된 코멘트만 게시합니다.
+- [`/resume`](../templates/workflow/.claude/commands/resume.md)은 개인 작업 메모를 현재 Git과
+  이슈 상태에 대조해 다음 작업 하나를 제안합니다. 오래된 메모보다 Git과 원격 상태를 우선합니다.
+- [`/wrap-up`](../templates/workflow/.claude/commands/wrap-up.md)은 완료한 일, 결정, 변경, 실제
+  검증과 다음 작업을 로컬에서 요약합니다. 외부 서비스로 전송하지 않습니다.
+
+### 스킬은 이슈와 PR 작업을 처리합니다
+
+- [`issue`](../templates/workflow/.claude/skills/issue/SKILL.md)는 새 요구사항과 완료된 작업 기록을
+  구분하고 이슈 양식, 중복 이슈와 지원하는 메타데이터를 확인합니다. 게시 후에는 생성 결과를
+  다시 조회하며 응답이 불명확하면 중복 생성하지 않습니다.
+- [`pr`](../templates/workflow/.claude/skills/pr/SKILL.md)은 기준 ref 이후 실제 diff와 검증
+  기록으로 PR 초안을 만듭니다. `report`의 생성 성공과 테스트 성공을 구분하고, 테스트 후 코드가
+  바뀌었으면 현재 코드 미검증 표시를 유지합니다.
+- [`apply-review`](../templates/workflow/.claude/skills/apply-review/SKILL.md)는 현재 브랜치와 PR
+  head, 미해결 스레드를 확인합니다. 코멘트를 현재 파일에 다시 연결해 수용·거절·보류로 나누고,
+  수용한 항목만 좁게 수정한 뒤 재검증합니다. push, 답글과 resolve는 요청된 범위에만 수행합니다.
+
+### 실행 결과는 현재 코드와 함께 확인합니다
+
+`/test`와 `report`는 명령 호출 여부가 아니라 실제 프로세스 종료와 해당 실행의 결과를
+사용합니다. 성공, 실패, 중단, 생략과 미실행을 구분하며 캐시, `UP-TO-DATE`, `NO-SOURCE`와
+테스트 0개를 새 테스트 통과로 세지 않습니다. 최신 실패나 중단을 과거 성공 결과로 가리지
+않고, 테스트 뒤 코드가 바뀌었으면 다시 테스트하거나 현재 코드 미검증으로 표시합니다.
+
+원격 CI는 로컬 실행 기록과 별개의 결과입니다. CI가 실패하면 해당 job의 로그에서 실패 원인을
+확인하고 수정한 뒤 로컬 검증과 CI를 다시 실행합니다. CLI의 로컬 report에 기록되지 않은 CI,
+커버리지나 수동 확인 결과를 추정해 추가하지 않습니다.
+
+### 작업 메모와 유지보수
+
+배포하는 것은 [작업 맥락 메모 예시](../templates/workflow/.claude/claude-progress.txt.example)와
+[작업 목록 예시](../templates/workflow/.claude/feature_list.json.example)입니다. 복사한 실제 메모는
+개인 런타임 데이터로 Git에서 제외합니다. 승인, 테스트 성공이나 여러 기기의 공유 상태를 메모로
+관리하지 않습니다. 세션을 다시 열면 `/resume`으로 실제 상태를 다시 확인합니다.
+
+워크플로 파일이나 저장소 지침을 바꾼 뒤에는 gardener로 문서와 실제 파일, 링크와 권한 설정을
+점검할 수 있습니다. 공유 [settings.json](../templates/workflow/.claude/settings.json)은 plan을
+기본 모드로 설정할 뿐 개인 권한을 추가하거나 넓히지 않습니다.
 
 ## manifest와 렌더링
 
@@ -38,7 +138,7 @@ dev-cycle은 Claude Code용 에이전트, 명령, 스킬, 설정 파일을 `temp
 기준으로 한 템플릿 루트입니다. `files`의 source는 템플릿 루트, target은 대상 Git 루트를
 기준으로 해석합니다. 목록에 있는 파일만 설치하며 디렉터리 전체를 재귀 복사하지 않습니다.
 `gitignore.template`은 설치할 때 `.gitignore`가 됩니다. npm 패키징 과정에서 `.gitignore`
-원본이 제외되므로 배포 소스에는 다른 이름을 사용합니다. 현재 템플릿 버전은 `0.1.4`입니다.
+원본이 제외되므로 배포 소스에는 다른 이름을 사용합니다. 현재 템플릿 버전은 `0.1.5`입니다.
 
 [`src/workflow.ts`](../src/workflow.ts)는 설정을 검사하고 템플릿 문자열을 렌더링합니다.
 파일 쓰기, Git 조회, 네트워크 요청, 프로세스 실행은 하지 않습니다.
