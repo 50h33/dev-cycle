@@ -6,17 +6,19 @@
 
 ## 사용
 
+먼저 dev-cycle 소스 저장소에서 `npm ci`와 `npm run build`를 실행한다.
+아래 CLI 경로는 실제 빌드한 위치로 바꾼다.
+
 ```sh
-dev-cycle report /path/to/project
-dev-cycle report /path/to/project --json
-dev-cycle report /path/to/project --run-id 01234567-89ab-cdef-0123-456789abcdef
-dev-cycle report /path/to/project --output .dev-cycle/reports/pr-tests.md
-dev-cycle report /path/to/project --output .dev-cycle/reports/pr-tests.md --dry-run
-dev-cycle report /path/to/project --config /path/to/config.json
+node /path/to/dev-cycle/dist/cli.js report /path/to/project
+node /path/to/dev-cycle/dist/cli.js report /path/to/project --json
+node /path/to/dev-cycle/dist/cli.js report /path/to/project --run-id 01234567-89ab-cdef-0123-456789abcdef
+node /path/to/dev-cycle/dist/cli.js report /path/to/project --output .dev-cycle/reports/pr-tests.md
+node /path/to/dev-cycle/dist/cli.js report /path/to/project --output .dev-cycle/reports/pr-tests.md --dry-run
+node /path/to/dev-cycle/dist/cli.js report /path/to/project --config /path/to/config.json
 ```
 
-소스 저장소에서는 `npm run build` 후 `node /path/to/dev-cycle/dist/cli.js report ...`로
-실행한다. 대상 경로를 생략하면 현재 디렉터리에서 Git 루트를 찾는다. `--config`는 명령을
+대상 경로를 생략하면 현재 디렉터리에서 Git 루트를 찾는다. `--config`는 명령을
 호출한 디렉터리 기준이고, 생략하면 대상 Git 루트의 `dev-cycle.config.json`을 사용한다.
 
 기본 출력은 stdout의 Markdown이다. `--json`을 사용하면 Markdown, 선택한 `TestResult` 기록,
@@ -102,14 +104,8 @@ JSON의 `run.status`, `run.exitCode`와 Markdown에서 별도로 확인한다. �
 
 ## 전체 흐름과 실패 복구
 
-```sh
-dev-cycle init /path/to/project --config /path/to/project-config.json --dry-run
-dev-cycle init /path/to/project --config /path/to/project-config.json
-dev-cycle init /path/to/project
-dev-cycle test /path/to/project --dry-run --json
-dev-cycle test /path/to/project --json
-dev-cycle report /path/to/project
-```
+[최소 Gradle 따라 하기](quickstart.md)에서 설정·설치·실제 테스트·보고서와 변경 후 출력을
+순서대로 재현할 수 있다. 간단한 명령 순서는 [README](../README.md#시작하기)를 참고한다.
 
 두 번째 init 재실행에서 설치 파일이 모두 유지 상태인지 확인한다. test가 실패하거나 중단되면
 report로 그 상태를 확인하고 원인을 수정한 뒤 test를 새로 실행한다. 새 실행은 새 run ID를 만들며

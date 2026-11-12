@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "repository": "example/dev-cycle-demo",
+  "defaultBranch": "main",
+  "baseRef": "main",
+  "paths": {
+    "conventions": "AGENTS.md",
+    "issueTemplates": ".github/ISSUE_TEMPLATE",
+    "prTemplate": ".github/pull_request_template.md"
+  },
+  "commands": {
+    "test": {
+      "executable": "./gradlew",
+      "args": ["test", "--console=plain"],
+      "windows": {
+        "executable": "./gradlew.bat",
+        "args": ["test", "--console=plain"]
+      }
+    }
+  },
+  "test": {
+    "commonModules": [],
+    "fullTestPaths": ["settings.gradle", "build.gradle", "gradlew", "gradlew.bat", "gradle/"],
+    "documentationPaths": ["docs/", "README.md"]
+  },
+  "artifactsDir": ".dev-cycle"
+}

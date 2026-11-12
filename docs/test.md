@@ -6,13 +6,16 @@ TicketRush의 `/test`에서 사용하던 변경 모듈 선택, Wrapper 실행, �
 
 ## 사용
 
+먼저 dev-cycle 소스 저장소에서 `npm ci`와 `npm run build`를 실행한다.
+아래 CLI 경로는 실제 빌드한 위치로 바꾼다. 설정과 기준 커밋부터 준비하는 예시는
+[최소 Gradle 따라 하기](quickstart.md)에 있다.
+
 ```sh
-dev-cycle test /path/to/project --dry-run --json
-dev-cycle test /path/to/project
-dev-cycle test /path/to/project --base-ref origin/trunk --config /path/to/config.json --json
+node /path/to/dev-cycle/dist/cli.js test /path/to/project --dry-run --json
+node /path/to/dev-cycle/dist/cli.js test /path/to/project
+node /path/to/dev-cycle/dist/cli.js test /path/to/project --base-ref origin/trunk --config /path/to/config.json --json
 ```
 
-소스 저장소에서는 `npm run build` 후 `node /path/to/dev-cycle/dist/cli.js test ...`로 실행한다.
 대상 경로를 생략하면 현재 디렉터리에서 Git 루트를 찾는다. `--config`는 호출한 디렉터리
 기준이고, 생략하면 대상 Git 루트의 `dev-cycle.config.json`을 사용한다. `--base-ref`가 설정의
 `baseRef`보다 우선하며, 설정의 `baseRef`가 없으면 `defaultBranch`를 사용한다.

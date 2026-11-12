@@ -6,7 +6,9 @@
 
 ## 실행 전 준비
 
-dev-cycle 저장소에서 Node.js 22와 npm 10 이상으로 빌드한다.
+dev-cycle 저장소에서 Node.js 22.17.0 이상 22 계열과 npm 10 이상으로 빌드한다.
+별도 디렉터리에서 설치부터 실제 테스트와 보고서까지 실행하는 예시는
+[최소 Gradle 따라 하기](quickstart.md)를 참고한다.
 
 ```sh
 npm ci
