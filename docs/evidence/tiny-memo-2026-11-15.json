@@ -1,0 +1,177 @@
+{
+  "recordedAtUtc": "2026-11-14T19:25:45.945Z",
+  "scope": "Same-author Codex CLI application with detailed prior task guidance; guide-only onboarding and Claude Code execution remain unverified.",
+  "devCycleCommit": "9d797fc71f1d130a814f0c9d440e546aefb28a35",
+  "targetRepository": "50h33/tiny-memo",
+  "targetCommit": "e9b0e2ef6d1c15367537dd983bdad1815e650270",
+  "comparisonCommit": "ab69c016962019bf1b599671d154e99d951fe1b1",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "node": "v22.17.0"
+  },
+  "init": {
+    "initialUnchanged": 19,
+    "blocked": {
+      "conflicts": [
+        "CLAUDE.md",
+        ".claude/settings.json",
+        ".gitignore"
+      ],
+      "pendingCreate": "docs/dev-cycle-workflow.md",
+      "dryRunAndApplyUnchangedIncludingGit": true
+    },
+    "resolved": {
+      "created": 1,
+      "repeatedUnchanged": 19,
+      "gitignorePrefixPreserved": true,
+      "manualMergeStillBlocked": true
+    }
+  },
+  "testPreviewNoWriteIncludingGit": true,
+  "runs": [
+    {
+      "stage": "success",
+      "runId": "fa0b30a4-7b22-4ae0-8cb1-029ee8f51cc4",
+      "status": "succeeded",
+      "cliExitCode": 0,
+      "processExitCode": 0,
+      "codeState": "unchanged",
+      "selection": {
+        "mode": "all",
+        "modules": [
+          "memo-core",
+          "memo-web"
+        ],
+        "tasks": [
+          "test"
+        ]
+      },
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xml": [
+        {
+          "path": "memo-core/build/test-results/test/TEST-tiny.memo.core.MemoStoreTest.xml",
+          "state": "fresh",
+          "copied": true
+        },
+        {
+          "path": "memo-web/build/test-results/test/TEST-tiny.memo.web.MemoServerTest.xml",
+          "state": "fresh",
+          "copied": true
+        }
+      ]
+    },
+    {
+      "stage": "failure",
+      "runId": "36ac1385-c6cf-4600-96a3-aff08532e525",
+      "status": "failed",
+      "cliExitCode": 1,
+      "processExitCode": 1,
+      "codeState": "unchanged",
+      "selection": {
+        "mode": "all",
+        "modules": [
+          "memo-core",
+          "memo-web"
+        ],
+        "tasks": [
+          "test"
+        ]
+      },
+      "counts": {
+        "tests": 4,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xml": [
+        {
+          "path": "memo-core/build/test-results/test/TEST-tiny.memo.core.MemoStoreTest.xml",
+          "state": "fresh",
+          "copied": true
+        },
+        {
+          "path": "memo-web/build/test-results/test/TEST-tiny.memo.web.MemoServerTest.xml",
+          "state": "stale",
+          "copied": false
+        }
+      ]
+    },
+    {
+      "stage": "restored",
+      "runId": "7fad8fa2-354f-491e-8bc4-65e630f8ddf6",
+      "status": "succeeded",
+      "cliExitCode": 0,
+      "processExitCode": 0,
+      "codeState": "unchanged",
+      "selection": {
+        "mode": "all",
+        "modules": [
+          "memo-core",
+          "memo-web"
+        ],
+        "tasks": [
+          "test"
+        ]
+      },
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xml": [
+        {
+          "path": "memo-core/build/test-results/test/TEST-tiny.memo.core.MemoStoreTest.xml",
+          "state": "fresh",
+          "copied": true
+        },
+        {
+          "path": "memo-web/build/test-results/test/TEST-tiny.memo.web.MemoServerTest.xml",
+          "state": "fresh",
+          "copied": true
+        }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "stage": "current",
+      "status": "generated",
+      "exitCode": 0,
+      "selectedRunId": "fa0b30a4-7b22-4ae0-8cb1-029ee8f51cc4",
+      "selectedRunStatus": "succeeded",
+      "freshness": "current"
+    },
+    {
+      "stage": "changed",
+      "status": "generated",
+      "exitCode": 0,
+      "selectedRunId": "fa0b30a4-7b22-4ae0-8cb1-029ee8f51cc4",
+      "selectedRunStatus": "succeeded",
+      "freshness": "changed"
+    },
+    {
+      "stage": "latest-failure",
+      "status": "generated",
+      "exitCode": 0,
+      "selectedRunId": "36ac1385-c6cf-4600-96a3-aff08532e525",
+      "selectedRunStatus": "failed",
+      "freshness": "current"
+    },
+    {
+      "stage": "restored",
+      "status": "generated",
+      "exitCode": 0,
+      "selectedRunId": "7fad8fa2-354f-491e-8bc4-65e630f8ddf6",
+      "selectedRunStatus": "succeeded",
+      "freshness": "current"
+    }
+  ],
+  "originalSourceGitStatePreserved": true
+}
