@@ -276,3 +276,12 @@ node /path/to/dev-cycle/dist/cli.js report /path/to/project --output .dev-cycle/
 보고서는 설정한 `artifactsDir` 아래의 `reports/`에만 저장할 수 있습니다. 기존 파일은
 덮어쓰지 않으므로 같은 이름이 있다면 다른 파일명을 지정하세요. 파일을 저장하기 전에
 확인하려면 `--dry-run`을 추가하면 됩니다.
+
+## 독립 프로젝트 적용 사례
+
+[tiny-memo 적용 사례](tiny-memo-case-study.md)에는 사전 작업 안내를 받고 설치 후 기능 하나를 개발한 순서,
+기존 파일 충돌 처리, 실제 테스트와 XML 및 report 대조, 실패 후 재검증 결과가 있습니다.
+기능이 이미 main에 반영된 뒤에도 당시 변경 범위를 재현할 수 있도록 최초 설치 커밋을
+비교 기준으로 지정하는 예시를 제공합니다. 사용한 CLI 커밋도 함께 고정합니다.
+Codex의 CLI 사용 결과와 Claude Code 실행 여부를 구분하고, 추가 설명 없이 가이드만으로
+도입하는 과정은 미검증으로 기록했습니다.
