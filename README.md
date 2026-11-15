@@ -1,15 +1,14 @@
 # dev-cycle
 
-dev-cycle은 Claude Code용 개발 워크플로 템플릿을 제공합니다. 함께 제공하는 CLI로 테스트를
-실행하고 결과를 기록할 수 있습니다.
-이슈 작성부터 조사, 계획, 구현, 테스트, 코드 리뷰, PR 작성과 리뷰 반영까지 이어지는 작업
-절차를 설정합니다. 세션을 다시 시작할 때의 작업 확인과 마무리 요약, 문서와 설정 점검도 포함합니다.
-
-조사, 계획, 구현, 리뷰 판단은 Claude Code가 맡고, TypeScript CLI는 템플릿 설치, Gradle 테스트
-실행과 결과 기록을 맡습니다. 프로젝트의 브랜치 규칙, 개발 명령, 이슈와 PR 양식은
-`dev-cycle.config.json`에 지정한 저장소 설정과 지침을 따릅니다.
+프로젝트마다 AI 개발 지침을 따로 관리하면 조사, 계획, 테스트, 리뷰 절차를 반복해서 구성해야 합니다.
+기존 설정을 복사해도 저장소명, 브랜치, 문서 경로와 테스트 명령은 새 프로젝트에 맞게 고쳐야 합니다.
+dev-cycle은 TicketRush에서 사용한 Claude Code 워크플로를 재사용 가능한 에이전트, 명령, 스킬 템플릿으로 분리했습니다.
+공통 작업 절차는 템플릿으로 설치하고, 프로젝트별 명령과 지침 경로는 `dev-cycle.config.json`으로 지정합니다.
 
 ## 전체 개발 흐름
+
+Claude Code가 조사, 계획, 구현과 리뷰 판단을 맡습니다. 설치된 템플릿은 각 단계의 역할과
+작업 순서를 안내하고, CLI는 템플릿 설치와 지원 범위의 Gradle 테스트 실행, 결과 정리를 돕습니다.
 
 | 단계 | 하는 일 | 확인할 결과 |
 | --- | --- | --- |
@@ -19,8 +18,8 @@ dev-cycle은 Claude Code용 개발 워크플로 템플릿을 제공합니다. �
 | 4. 구현 | Claude Code가 기존 작업 트리를 보존하고 저장소 규칙에 맞는 작업 브랜치에서 코드와 테스트를 작성합니다. | 요청한 범위의 변경 |
 | 5. 테스트 | `/test`로 테스트 선택 이유를 확인하고 CLI를 통해 실제 테스트를 실행합니다. | 성공, 실패, 중단, 생략, 미실행 구분과 실행 기록 |
 | 6. 코드 리뷰 | `reviewer`가 기준 ref와 현재 변경을 독립적으로 검토합니다. Claude Code가 타당한 지적을 반영하고 다시 검증합니다. | 문제의 심각도, 위치, 수정 결과와 남은 판단 |
-| 7. 결과 정리 | CLI `report`로 테스트 결과와 테스트 이후 코드 변경 여부를 확인합니다. | PR 본문에 사용할 Markdown 검증 블록 |
-| 8. 커밋과 PR | 요청된 커밋을 마친 뒤 `/test`와 `report`로 최종 상태를 확인하고, push와 `/pr`을 진행합니다. | 최종 커밋의 검증 결과와 PR 초안 또는 게시한 PR |
+| 7. 결과 정리 | 실제 검증 결과를 확인하고, CLI `report`로 PR에 넣을 테스트 결과를 정리합니다. | PR 본문에 사용할 Markdown 검증 블록 |
+| 8. 커밋과 PR | 요청된 커밋을 마친 뒤 최종 상태를 재검증하고, push와 `/pr`을 진행합니다. | 최종 커밋의 검증 결과와 PR 초안 또는 게시한 PR |
 | 9. PR 리뷰 대응 | `/apply-review`로 미해결 코멘트를 수용, 거절, 보류로 분류하고, 수용한 지적을 반영해 재검증합니다. | 코멘트별 처리 결과, 요청된 답글과 resolve |
 | 10. 세션 마무리 | `/wrap-up`으로 완료한 일, 결정, 검증 결과와 다음 작업을 정리합니다. | 다음 세션에서도 참고할 수 있는 작업 요약 |
 
@@ -31,12 +30,6 @@ dev-cycle은 Claude Code용 개발 워크플로 템플릿을 제공합니다. �
 한 번의 `/dev-cycle`은 지정한 이슈를 작업 단위로 삼습니다. 브랜치 이름과 커밋 메시지 형식은
 `paths.conventions`가 가리키는 저장소 지침을 따릅니다. 커밋을 요청하면 메인 대화에서 작업
 범위에 맞는 변경을 확인하고 커밋합니다. 리뷰 반영으로 코드가 바뀌었다면 먼저 다시 검증합니다.
-
-실행 기록은 파일 내용뿐 아니라 HEAD와 index도 비교합니다. 따라서 테스트 후 `git add`나
-커밋을 하면 파일 내용이 같아도 이전 기록은 `changed`가 될 수 있습니다. PR에 최종 커밋의
-검증 결과를 넣으려면 커밋 후 `/test`와 `report`를 다시 실행하세요. 다시 검증하지 못했다면
-현재 코드가 미검증이라는 표시를 유지합니다. 이때 비교 ref는 PR의 base 브랜치로 지정합니다.
-`HEAD`를 기준으로 삼으면 커밋한 변경은 비교 대상에서 빠져 테스트가 생략될 수 있습니다.
 
 구현 전에 계획을 공유하고, 범위 확대나 새 설계 결정처럼 판단이 필요한 부분을 확인합니다.
 이미 요청받은 구현과 명백한 오류 수정은 반복 승인 없이 이어갑니다. 커밋, push, PR 게시, 리뷰
@@ -116,6 +109,24 @@ Nit(표현이나 가독성 수준의 가벼운 제안)으로 나누고 파일 �
 다음 작업을 요약합니다. 사용자가 요약에서 필요한 내용을 메모에 옮겨 다음 세션에서 참고할 수 있습니다.
 요약 명령이 메모를 자동 저장하거나 작업 상태를 동기화하는 것은 아닙니다.
 
+## 공통 워크플로와 프로젝트별 설정
+
+`init`은 역할별 에이전트, 작업 명령과 스킬을 `.claude/`에 설치합니다. 설정을 읽는
+`CLAUDE.md`, 워크플로 가이드와 작업 메모 예시도 함께 설치합니다.
+기존 파일과 충돌하면 덮어쓰지 않고 알려주며, 같은 내용으로 다시 설치하면 기존 파일을 유지합니다.
+
+프로젝트 고유의 값은 `dev-cycle.config.json`으로 지정합니다. 브랜치와 커밋 규칙, 이슈와 PR
+양식은 대상 저장소의 문서를 참조하므로 각 프로젝트의 규칙을 유지할 수 있습니다.
+
+| 설정 | 프로젝트마다 지정할 내용 |
+| --- | --- |
+| `repository`, `defaultBranch`, `baseRef` | GitHub 저장소, 기본 브랜치, 변경을 비교할 ref |
+| `paths` | 작업 지침, 이슈 양식, PR 양식의 경로 |
+| `commands.test` | 테스트 실행 파일과 인자, Windows용 명령 |
+| `test` | 공통 모듈, 전체 테스트가 필요한 경로, 테스트를 생략할 문서 경로 |
+
+설치 파일 목록과 설정 계약은 [워크플로 가이드](docs/workflow-package.md)에 있습니다.
+
 ## 설정과 권한
 
 설치되는 `CLAUDE.md`는 Git 루트의 `dev-cycle.config.json`과 프로젝트 지침을 읽도록
@@ -134,6 +145,9 @@ Nit(표현이나 가독성 수준의 가벼운 제안)으로 나누고 파일 �
 
 ## CLI 명령
 
+워크플로의 설치와 검증을 돕기 위해 dev-cycle에서 추가한 TypeScript CLI입니다.
+`report`는 CLI로 실행한 테스트 결과를 PR 본문에 옮길 때 사용하는 보조 기능입니다.
+
 | 명령 | 하는 일 | 자세한 사용법 |
 | --- | --- | --- |
 | `init` | 대상 저장소에 Claude Code용 파일과 설정을 설치합니다. 기존 파일과 충돌하면 덮어쓰지 않고 중단합니다. | [설치와 충돌 처리](docs/init.md) |
@@ -142,6 +156,17 @@ Nit(표현이나 가독성 수준의 가벼운 제안)으로 나누고 파일 �
 
 `/test`는 Claude Code에 테스트 절차를 요청하는 명령이고, `dev-cycle test`는 실제 테스트를
 실행하는 CLI 명령입니다. CLI의 `test`와 `report`는 Claude Code 없이도 사용할 수 있습니다.
+
+터미널에서 직접 실행하려면 빌드한 CLI의 실제 경로와 대상 Git 저장소 경로를 지정하세요.
+
+```sh
+node /path/to/dev-cycle/dist/cli.js test /path/to/project --dry-run --json
+node /path/to/dev-cycle/dist/cli.js test /path/to/project
+node /path/to/dev-cycle/dist/cli.js report /path/to/project
+```
+
+`test --dry-run`은 실행할 테스트와 선택 이유만 보여줍니다. 실제 테스트를 실행하려면
+`--dry-run`을 빼야 합니다. 테스트할 저장소에는 HEAD 커밋과 비교할 ref가 있어야 합니다.
 
 ## 지원 환경
 
@@ -161,29 +186,31 @@ Kotlin DSL, 동적 모듈 설정, 중첩 모듈, composite build, 사용자 정�
 
 ## 시작하기
 
-이 저장소를 clone한 디렉터리에서 의존성을 설치하고 CLI를 빌드하세요.
+설치에는 Node.js 22.17.0 이상 22 계열, npm 10 이상, Git이 필요하고, 워크플로는 Claude Code에서 사용합니다.
+현재 CLI의 테스트 실행 기능은 [지원하는 Gradle 프로젝트](docs/test.md#지원하는-프로젝트)를 대상으로 합니다.
+먼저 [설정 파일 예시](examples/dev-cycle.config.json)를 대상 저장소 밖에 복사해 저장소명,
+기본 브랜치, 비교 ref, 문서 경로와 테스트 명령을 맞추세요.
+
+이 저장소를 clone한 디렉터리에서 아래 3줄로 빌드하고 대상 저장소에 설치합니다.
+`/path/to/project`와 `/path/to/project-config.json`은 실제 경로로 바꾸고, 공백이 있으면 따옴표로 감싸세요.
 
 ```sh
 npm ci
 npm run build
+node dist/cli.js init /path/to/project --config /path/to/project-config.json
 ```
 
-[`설정 파일 예시`](examples/dev-cycle.config.json)를 복사해 테스트할 저장소에 맞게 수정하세요.
-저장소명, 기본 브랜치, 비교 ref, 문서 경로와 테스트 명령을 직접 지정해야 합니다.
-
-아래 경로를 실제 위치로 바꾼 뒤 실행하세요. 경로에 공백이 있으면 따옴표로 감싸야 합니다.
-
-```sh
-node /path/to/dev-cycle/dist/cli.js init /path/to/project --config /path/to/project-config.json --dry-run
-node /path/to/dev-cycle/dist/cli.js init /path/to/project --config /path/to/project-config.json
-```
-
-첫 번째 명령은 설치할 파일을 미리 보여줍니다. 결과가 `ready`이면 두 번째 명령으로 설치할 수
-있습니다. `blocked`가 나오면 [충돌 처리](docs/init.md#계획과-충돌)를 먼저 확인하세요.
+처음 적용하는 저장소에서는 마지막 명령에 `--dry-run`을 붙여 설치 계획을 확인하세요.
+`ready`이면 옵션을 빼고 설치하고, `blocked`이면 [충돌 처리](docs/init.md#계획과-충돌)를 확인하세요.
 설치 후에는 대상 저장소의 `dev-cycle.config.json`을 자동으로 읽습니다.
+자세한 준비와 실행 순서는 [시작 가이드](docs/quickstart.md)를 참고하세요.
+
+### 설치 후 사용
 
 대상 Git 루트에서 Claude Code를 열고 `/agents`로 네 역할을 확인하세요. 빌드한 CLI의 실제
 경로도 알려줘야 합니다. `init`은 PATH에 `dev-cycle` 명령을 등록하지 않습니다.
+공유 설정은 `plan` 모드로 시작합니다. 이슈 조회에는 GitHub 인증과 저장소 접근 권한이,
+구현과 테스트 실행에는 해당 작업을 허용하는 Claude Code 권한이 필요합니다.
 
 ```text
 dev-cycle CLI는 /path/to/dev-cycle/dist/cli.js야. node로 실행해 줘.
@@ -192,38 +219,19 @@ dev-cycle CLI는 /path/to/dev-cycle/dist/cli.js야. node로 실행해 줘.
 
 `123`은 작업할 기존 이슈 번호로 바꾸세요. 이슈가 없다면 먼저 `/issue`로 작업을 정리하고,
 이전 세션에서 하던 작업이라면 `/resume`으로 상태부터 확인할 수 있습니다.
-설치부터 PR 작성과 리뷰 반영까지는 [시작 가이드](docs/quickstart.md)를 참고하세요.
-
-터미널에서 테스트와 보고서만 직접 실행할 수도 있습니다.
-
-```sh
-node /path/to/dev-cycle/dist/cli.js test /path/to/project --dry-run --json
-node /path/to/dev-cycle/dist/cli.js test /path/to/project
-node /path/to/dev-cycle/dist/cli.js report /path/to/project
-```
-
-`test --dry-run`은 실행할 테스트와 선택 이유만 보여줍니다. 실제 테스트를 실행하려면
-`--dry-run`을 빼야 합니다. 테스트할 저장소에는 HEAD 커밋과 비교할 ref가 있어야 합니다.
+`/dev-cycle`은 해당 이슈의 조사, 계획, 구현, 테스트와 리뷰를 이어가는 절차를 안내합니다.
+역할별 에이전트와 개별 명령을 따로 호출해 필요한 단계만 진행할 수도 있습니다.
 
 ## 테스트 결과 읽기
 
-테스트 실행 결과는 기본적으로 `.dev-cycle/runs/`에 저장됩니다. `report`는 가장 최근에 시작한
-실행을 읽어 Markdown을 출력합니다. 최신 테스트가 실패했으면 실패 결과를 그대로 보여줍니다.
+실행 결과는 기본적으로 `.dev-cycle/runs/`에 저장됩니다. 테스트의 성공, 실패, 중단, 생략과
+미실행을 구분하며, Gradle의 캐시 결과를 새 테스트 통과로 세지 않습니다.
+`report`는 최신 기록을 요약하고 테스트 후 코드가 바뀌었으면 `changed`로 표시합니다.
+기록과 현재 상태가 같은 `current`도 테스트 통과를 뜻하지 않으므로 실행 결과를 함께 확인하세요.
 
-테스트 성공 여부와 코드 변경 여부는 별개입니다. `freshness`는 테스트 당시 코드와 현재 코드가
-같은지 나타내며, CLI 출력에서는 ‘코드 신선도’로 표시됩니다.
-
-| 표시 | 의미 |
-| --- | --- |
-| `succeeded` + `current` | Gradle 프로세스가 성공했고, 코드와 설정도 실행 당시와 같습니다. 새 테스트 실행 여부는 XML 결과를 확인하세요. |
-| `succeeded` + `changed` | Gradle 프로세스는 성공했지만, 실행 중이나 이후에 코드나 설정 등이 바뀌었습니다. 다시 테스트해야 합니다. |
-| `unknown` 또는 `incomplete` | 코드 상태를 비교할 수 없거나 실행이 끝난 기록이 없습니다. 현재 코드가 검증됐다고 볼 수 없습니다. |
-
-프로세스가 성공했다고 테스트를 새로 실행한 것은 아닐 수 있습니다. Gradle의 `UP-TO-DATE`나
-`FROM-CACHE` 결과는 새 테스트 통과 수에 넣지 않습니다. 실제로 실행한 태스크의 새 XML 결과만
-집계합니다. `report`의 종료 코드 0도 테스트 통과가 아니라 보고서를 만들었다는 뜻입니다.
-
-CLI는 로컬 테스트와 보고서 작성까지 수행합니다. 커밋, push, PR 게시와 머지는 별도 작업입니다.
+코드뿐 아니라 HEAD와 index도 비교하므로 테스트 후 staging이나 커밋만으로도 이전 기록이 `changed`가 될 수 있습니다.
+최종 커밋의 PR 검증에는 PR base 브랜치를 비교 ref로 사용하세요. `HEAD`와 비교하면 커밋한
+변경이 빠질 수 있습니다. 결과 해석과 재검증 방법은 [report 사용법](docs/report.md)을 참고하세요.
 
 ## 검증 현황
 
